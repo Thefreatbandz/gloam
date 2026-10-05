@@ -2,10 +2,13 @@ extends RefCounted
 # GLOAM — all writing, monsters, rooms. Horror rogue RPG.
 
 const INTRO := [
-	{"art": "title", "text": "GLOAM.\n\nA horror rogue RPG.\n\nNine floors down. One way out.\n\nTap to begin your descent."},
-	{"art": "homecoming", "text": "You marched home from the Ashen War with a limp and a medal you never wanted.\n\nVesper was silent. The bells hadn't rung in three nights.\n\nAnd Mira — your little sister — had pried up the chapel stones six days ago.\n\nShe never came up."},
+	{"art": "title_hero", "text": "GLOAM.\n\nA horror rogue RPG.\n\nNine floors down. One way out.\n\nTap to begin your descent."},
+	{"art": "war", "text": "The Ashen War took seven years from you.\n\nSeven years of gray snow that wasn't snow. Of orders you still hear at night.\n\nYou told yourself: survive it, and go home. Just go home."},
+	{"art": "homecoming", "text": "You marched into Vesper with a limp and a medal you never wanted.\n\nNo one met you at the road. No smoke from any chimney.\n\nThe village was silent — had been, three nights now."},
+	{"art": "mira_room", "text": "Her room was exactly as she'd left it. Bed unslept. Carving knife on the pillow.\n\nHer blue scarf — gone from its hook.\n\nSix days gone. Six days, and no one in Vesper would say where."},
 	{"art": "intro1", "text": "Three nights ago, the bells of Vesper stopped ringing.\n\nNo screams. No smoke. Just silence — and then the whispering from below the chapel floor."},
-	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp. Go find her."},
+	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp."},
+	{"art": "keeper", "text": "You are Corvin of Vesper. Soldier. Brother.\n\nMira went down six days ago, and she is still down there.\n\nGo find her."},
 ]
 
 const WEAPONS := [

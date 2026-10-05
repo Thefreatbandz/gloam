@@ -55,6 +55,8 @@ var sfx_player: AudioStreamPlayer
 var amb_player: AudioStreamPlayer
 var snd_btn: Button
 var sound_on := true
+var title_label: Label
+var title_t := 0.0
 var dungeon: Array = []
 var cur_node := 0
 var _after_fight := ""
@@ -96,6 +98,20 @@ func _build_ui() -> void:
 	art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(art_rect)
+	# big title overlay
+	title_label = Label.new()
+	title_label.text = "GLOAM"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.position = Vector2(20, 300)
+	title_label.custom_minimum_size = Vector2(680, 130)
+	title_label.add_theme_font_size_override("font_size", 110)
+	title_label.add_theme_color_override("font_color", Color(0.75, 0.08, 0.08, 0.92))
+	title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+	title_label.add_theme_constant_override("shadow_offset_x", 4)
+	title_label.add_theme_constant_override("shadow_offset_y", 4)
+	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_label.visible = false
+	add_child(title_label)
 	# scanline overlay on art
 	scanlines = ColorRect.new()
 	scanlines.position = Vector2(20, 20)
@@ -274,6 +290,12 @@ func _finish_typewriter() -> void:
 		_show_choices()
 
 func _process(dt: float) -> void:
+	if mode == "title" and title_label.visible:
+		title_t += dt
+		var fl := 0.94 + 0.04 * sin(title_t * 6.0) + 0.02 * sin(title_t * 17.3)
+		art_rect.modulate = Color(fl, fl * 0.98, fl * 0.96)
+		var tp := 0.88 + 0.12 * (0.5 + 0.5 * sin(title_t * 1.4))
+		title_label.modulate = Color(1, 1, 1, tp)
 	if not _typewriter_done:
 		_typewriter_t += dt
 		var total := _typewriter_full.length()
@@ -437,7 +459,10 @@ func _advance_cutscene() -> void:
 # ---------------- flow ----------------
 func _show_title() -> void:
 	mode = "title"
-	_set_art("title")
+	_set_art("title_hero")
+	title_label.visible = true
+	title_t = 0.0
+	art_rect.modulate = Color(1, 1, 1)
 	_refresh_status()
 	snd_btn.text = "SND" if sound_on else "OFF"
 	var extra := ""
@@ -479,6 +504,8 @@ func _start_run() -> void:
 
 func _show_intro() -> void:
 	mode = "intro"
+	title_label.visible = false
+	art_rect.modulate = Color(1, 1, 1)
 	if intro_idx >= Content.INTRO.size():
 		_maybe_whisper("first_bell", func(): _play_cutscene(Content.TIER_CUTSCENES[1], _begin_floor))
 		return
