@@ -266,7 +266,7 @@ func _start_run() -> void:
 func _show_intro() -> void:
 	mode = "intro"
 	if intro_idx >= Content.INTRO.size():
-		_begin_floor()
+		_play_cutscene(Content.TIER_CUTSCENES[1], _begin_floor)
 		return
 	var p: Dictionary = Content.INTRO[intro_idx]
 	_set_art(String(p["art"]))
@@ -282,6 +282,8 @@ func _begin_floor() -> void:
 
 func _gen_floor(f: int) -> Array:
 	var rooms := []
+	if Content.KEEPER_BEATS.has(f):
+		rooms.append({"kind": "keeper"})
 	var pool: Array = Content.ROOMS.duplicate()
 	pool.shuffle()
 	# 1 combat guaranteed, then 3 mixed, then stairs
@@ -323,6 +325,8 @@ func _next_room() -> void:
 			_start_fight(_pick_monster())
 		"boss":
 			_start_boss(floor_num / 3 - 1)
+		"keeper":
+			_visit_keeper()
 		"stairs":
 			_set_art("intro2")
 			_say(Content.STAIR_TEXT)
@@ -340,6 +344,19 @@ func _next_room() -> void:
 				if String(cd["do"]).begins_with("offer:") and gold < 20:
 					continue
 				_choice(String(cd["label"]), String(cd["do"]))
+
+func _visit_keeper() -> void:
+	var kb: Dictionary = Content.KEEPER_BEATS[floor_num]
+	for g in String(kb["gift"]).split("+"):
+		var p := g.split(":")
+		match p[0]:
+			"potion":
+				potions += int(p[1])
+			"heal":
+				hp = mini(max_hp, hp + int(p[1]))
+			"atk":
+				atk += int(p[1])
+	_play_cutscene([kb], _next_room)
 
 func _pick_monster() -> Dictionary:
 	var tier := 0
@@ -543,23 +560,40 @@ func _die() -> void:
 	if floor_num > best_depth:
 		best_depth = floor_num
 		_save_best()
-	_set_art("death")
 	_refresh_status()
-	_say(Content.DEATH_TEXT + "\n\nYou reached floor %d." % floor_num)
+	var panels := [
+		{"art": "death", "text": Content.DEATH_TEXT + "\n\nYou reached floor %d." % floor_num},
+		{"art": "title", "text": "Somewhere above, another lantern is lit.\n\nAnother delver lifts the chapel stones.\n\nThe dark is patient."},
+	]
+	_play_cutscene(panels, _die_choices)
+
+func _die_choices() -> void:
+	mode = "dead"
+	_clear_choices()
 	_pending_choices = []
 	_choice("Descend again", "start")
 	_choice("Title", "title")
+	_show_choices()
 
 func _win() -> void:
 	mode = "win"
 	best_depth = 9
 	_save_best()
-	_set_art("escape")
 	_refresh_status()
-	_say(Content.WIN_TEXT + "\n\nGold carried out: %d" % gold)
+	var panels := [
+		{"art": "escape", "text": "It lets go.\n\nYou climb with the last of your strength — up through the teeth-door, up through the chapels, up into grey morning light."},
+		{"art": "intro1", "text": "Vesper is still silent. But the whispering has stopped.\n\nYou walk out of the village and do not look back."},
+		{"art": "title", "text": "GLOAM — escaped.\n\nGold carried out: %d\n\nThe dark will wait for the next delver." % gold},
+	]
+	_play_cutscene(panels, _win_choices)
+
+func _win_choices() -> void:
+	mode = "win"
+	_clear_choices()
 	_pending_choices = []
 	_choice("Descend again", "start")
 	_choice("Title", "title")
+	_show_choices()
 
 # ---------------- save ----------------
 const SAVE_PATH := "user://gloam.save"
