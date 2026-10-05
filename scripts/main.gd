@@ -59,6 +59,7 @@ var title_label: Label
 var title_t := 0.0
 var dungeon: Array = []
 var cur_node := 0
+var prev_node := -1
 var _after_fight := ""
 
 const EXIT_DESCS := ["a low archway", "a corridor that smells of rot", "a passage glimmering faintly", "a stairwell breathing cold air", "a crack in the wall", "a doorway choked with cobwebs", "a tunnel that hums", "a dark opening", "a sloping passage", "a narrow fissure"]
@@ -557,12 +558,13 @@ func _nodes_of_kind(kinds: Array) -> Array:
 
 func _gen_dungeon(f: int) -> void:
 	dungeon = []
-	var count := 8 + mini(3, f / 3)
+	prev_node = -1
+	var count := 10 + mini(4, f / 2)
 	for i in count:
 		dungeon.append({"id": i, "kind": "empty", "conns": [], "visited": false, "data": {}, "descs": {}, "special": ""})
 	for i in range(1, count):
 		_link(i, randi() % i)
-	for k in range(count / 3):
+	for k in range(count / 2):
 		_link(randi() % count, randi() % count)
 	var depth := _bfs_depths()
 	var order := []
@@ -639,6 +641,20 @@ func _gen_dungeon(f: int) -> void:
 			(dungeon[pick2] as Dictionary)["kind"] = "labyrinth"
 			(dungeon[pick2] as Dictionary)["special"] = "labyrinth"
 			(dungeon[pick2] as Dictionary)["data"] = {"progress": 0, "solved": false}
+	# sealed rooms: 1-2 per floor, no way back once entered
+	var sealed_n := 1 + (1 if randf() < 0.5 else 0)
+	var sc := _nodes_of_kind(["fight", "treasure", "trap", "event"])
+	sc.shuffle()
+	var sealed_done := 0
+	for sid in sc:
+		if sealed_done >= sealed_n:
+			break
+		if sid == 0:
+			continue
+		var sdata: Dictionary = ((dungeon[sid] as Dictionary)["data"] as Dictionary).duplicate()
+		sdata["sealed"] = true
+		(dungeon[sid] as Dictionary)["data"] = sdata
+		sealed_done += 1
 	for i in count:
 		var nd2: Dictionary = dungeon[i]
 		for c in nd2["conns"]:
@@ -665,7 +681,29 @@ func _enter_node(id: int) -> void:
 		_show_exits(true)
 		return
 	nd["visited"] = true
+	# sealed rooms: the way in closes behind you
+	if bool((nd["data"] as Dictionary).get("sealed", false)) and prev_node >= 0:
+		_seal_passage(prev_node, id)
+		_play_cutscene([{"art": "trap", "text": _sealed_pending}], func(): _run_node())
+		return
 	_run_node()
+
+func _seal_passage(from_id: int, to_id: int) -> void:
+	# remove the way back: one-way door
+	var a: Dictionary = dungeon[from_id]
+	var b: Dictionary = dungeon[to_id]
+	(a["conns"] as Array).erase(to_id)
+	(b["conns"] as Array).erase(from_id)
+	(a["descs"] as Dictionary).erase(to_id)
+	(b["descs"] as Dictionary).erase(from_id)
+	prev_node = -1
+	_sealed_notice()
+
+func _sealed_notice() -> void:
+	var lines: Array = Content.SEAL_TEXTS
+	_sealed_pending = String(lines[randi() % lines.size()])
+
+var _sealed_pending := ""
 
 func _run_node() -> void:
 	_refresh_status()
@@ -736,7 +774,12 @@ func _show_exits(revisit := false) -> void:
 	else:
 		_say("Passages lead out:")
 	_pending_choices = []
+	# explicit way back
+	if prev_node >= 0 and prev_node in nd["conns"]:
+		_choice("Turn back the way you came", "go:" + str(prev_node))
 	for c in nd["conns"]:
+		if int(c) == prev_node:
+			continue
 		_choice(String((nd["descs"] as Dictionary).get(int(c), "a dark passage")), "go:" + str(int(c)))
 
 func _run_labyrinth() -> void:
@@ -888,7 +931,14 @@ func _pick_monster() -> Dictionary:
 			cands.append(md)
 	var base: Dictionary = cands[randi() % cands.size()]
 	if floor_num <= 9:
-		return base
+		# the deeper you go, the meaner it gets
+		var fmult := 1.0 + (floor_num - 1) * 0.12
+		var fm: Dictionary = base.duplicate()
+		fm["hp"] = int(int(base["hp"]) * fmult)
+		fm["atk"] = int(int(base["atk"]) * fmult)
+		var fg: Array = base["gold"]
+		fm["gold"] = [int(fg[0] * fmult), int(fg[1] * fmult)]
+		return fm
 	var mult := 1.0 + (floor_num - 9) * 0.18
 	var m2: Dictionary = base.duplicate()
 	m2["hp"] = int(int(base["hp"]) * mult)
@@ -910,6 +960,7 @@ func _do(do: String) -> void:
 		"stairs_go":
 			_descend()
 		"go":
+			prev_node = cur_node
 			_enter_node(int(parts[1]))
 		"depths_drop":
 			var fall := randi_range(5, 9)
