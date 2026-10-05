@@ -191,3 +191,31 @@ const END_TAKEN := [
 	{"art": "title", "text": "Somewhere above, another lantern is lit.\n\nAnother delver lifts the chapel stones.\n\nTAKEN — the dark is patient."},
 ]
 const GLOAM_OFFER := "The dark coils around you, almost gentle.\n\n\"KNEEL,\" it says, in your voice, \"AND STAY. IT'S WARM DOWN HERE.\"\n\nYour blade is in your hand. Your knees are already bending."
+
+# 12 collectible lore fragments: {id, title, text}
+const WHISPERS := [
+	{"id": "first_bell", "title": "The First Bell",
+		"text": "Vesper was a silver-mining village, until the ninth shaft broke into a hollow that breathed.\n\nThe company sealed the shaft. The village kept the silver.\n\nThe hollow kept the village."},
+	{"id": "the_throat", "title": "The Throat",
+		"text": "The mine didn't dig down. It dug in — into the throat of something sleeping.\n\nEvery scream down here echoes twice: once off the stone, once off the teeth."},
+	{"id": "bell_keeper", "title": "The Bell-Keeper",
+		"text": "The chapel bell was rung every hour, to remind the dark it was being watched.\n\nWhen the dark took the keeper's hands, the bells stopped.\n\nHe still rings. He doesn't know what for."},
+	{"id": "hollow_choir", "title": "The Hollow Choir",
+		"text": "The stones sing because the dark memorized the hymn from the buried dead.\n\nIt sings to itself the way you hum while you work.\n\nYou are the work."},
+	{"id": "the_warden", "title": "The Warden",
+		"text": "The Warden counts teeth because every taken soul leaves one at the door.\n\nIt is not cruel. It is only thorough.\n\nBe counted."},
+	{"id": "starved_saint", "title": "The Starved Saint",
+		"text": "Saint Oda fasted for forty days to become too holy to be eaten.\n\nOn the forty-first day, hunger ate her first.\n\nShe has been fasting ever since."},
+	{"id": "keeper1", "title": "The Keeper, I",
+		"text": "The Keeper was the first delver, years before you.\n\nThey walked all nine floors, and stood where you will stand."},
+	{"id": "keeper2", "title": "The Keeper, II",
+		"text": "At the end, the Keeper refused to kneel — and refused to leave.\n\nThe dark could neither keep them nor release them.\n\nSo they tend the blue lanterns, in between."},
+	{"id": "keeper3", "title": "The Keeper, III",
+		"text": "The blue flame is the last hour of every bell ever rung in Vesper, saved and burning.\n\nAs long as one burns, the dark cannot learn your name."},
+	{"id": "gambler", "title": "The Gambler's Debt",
+		"text": "The shade bet his soul double-or-nothing on one last roll. He lost.\n\nHe's still rolling.\n\nHe'll stake yours too, if you let him."},
+	{"id": "mirror", "title": "The Mirror",
+		"text": "The dark wears your shape because it has no shape of its own.\n\nIt is learning 'person' the way a child learns a word —\n\nby repeating it wrong, at you."},
+	{"id": "the_gloam", "title": "The Gloam",
+		"text": "The Gloam isn't below the world.\n\nThe world is a scab over the Gloam —\n\nand Vesper picked at it until it bled."},
+]

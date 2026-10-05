@@ -27,6 +27,7 @@ var best_depth := 0
 var keeper_met := 0
 var fight_is_boss := false
 var endings_found: Array = []
+var whispers_found: Array = []
 
 # ui
 var art_rect: TextureRect
@@ -223,6 +224,69 @@ func _refresh_status() -> void:
 	floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
 	gold_label.text = "%d gold" % gold
 
+# ---------------- whispers (collectible lore) ----------------
+func _whisper_by_id(id: String) -> Dictionary:
+	for w in Content.WHISPERS:
+		var wd: Dictionary = w
+		if String(wd["id"]) == id:
+			return wd
+	return {}
+
+func _grant_whisper(id: String) -> String:
+	if id in whispers_found:
+		return ""
+	var w := _whisper_by_id(id)
+	if w.is_empty():
+		return ""
+	whispers_found.append(id)
+	_save_best()
+	return String(w["title"])
+
+func _whisper_tail(id: String) -> String:
+	var t := _grant_whisper(id)
+	if t == "":
+		return ""
+	return "\n\n— WHISPER UNCOVERED: %s —\nRead it in the Codex." % t
+
+func _maybe_whisper(id: String, on_done: Callable) -> void:
+	var t := _grant_whisper(id)
+	if t == "":
+		on_done.call()
+		return
+	_set_art("whisper")
+	_refresh_status()
+	_say("— WHISPER UNCOVERED —\n\n%s\n\nRead it in the Codex." % t)
+	_pending_choices = []
+	_choice("Continue", "whisper_next")
+	_cs_done = on_done
+
+func _show_codex() -> void:
+	mode = "codex"
+	_set_art("whisper")
+	_refresh_status()
+	text_label.text = "CODEX OF WHISPERS\n\n%d of 12 uncovered. The dark remembers." % whispers_found.size()
+	text_label.visible_ratio = 1.0
+	_typewriter_done = true
+	_clear_choices()
+	_pending_choices = []
+	for w in Content.WHISPERS:
+		var wd: Dictionary = w
+		if String(wd["id"]) in whispers_found:
+			_choice(String(wd["title"]), "codex:" + String(wd["id"]))
+		else:
+			_choice("? ? ?", "codex:locked")
+	_choice("Back", "title")
+	_show_choices()
+
+func _show_whisper_entry(id: String) -> void:
+	var w := _whisper_by_id(id)
+	if w.is_empty():
+		_show_codex()
+		return
+	_say("%s\n\n%s" % [String(w["title"]), String(w["text"])])
+	_pending_choices = []
+	_choice("Back to Codex", "codex_back")
+
 # ---------------- cutscenes ----------------
 var _cs_panels: Array = []
 var _cs_idx := 0
@@ -260,6 +324,7 @@ func _show_title() -> void:
 	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra)
 	_pending_choices = []
 	_choice("DESCEND", "start")
+	_choice("CODEX (%d/12)" % whispers_found.size(), "codex")
 
 func _start_run() -> void:
 	hp = 30
@@ -277,7 +342,7 @@ func _start_run() -> void:
 func _show_intro() -> void:
 	mode = "intro"
 	if intro_idx >= Content.INTRO.size():
-		_play_cutscene(Content.TIER_CUTSCENES[1], _begin_floor)
+		_maybe_whisper("first_bell", func(): _play_cutscene(Content.TIER_CUTSCENES[1], _begin_floor))
 		return
 	var p: Dictionary = Content.INTRO[intro_idx]
 	_set_art(String(p["art"]))
@@ -324,10 +389,12 @@ func _next_room() -> void:
 		if floor_num - 1 > best_depth:
 			best_depth = floor_num - 1
 			_save_best()
-		if Content.TIER_CUTSCENES.has(floor_num):
-			_play_cutscene(Content.TIER_CUTSCENES[floor_num], _begin_floor)
-		else:
-			_begin_floor()
+		var after: Callable = _begin_floor
+		if floor_num == 4:
+			after = func(): _maybe_whisper("hollow_choir", _begin_floor)
+		elif floor_num == 9:
+			after = func(): _maybe_whisper("the_gloam", _begin_floor)
+		_play_cutscene(Content.TIER_CUTSCENES[floor_num], after)
 		return
 	var r: Dictionary = room_queue.pop_front()
 	var kind := String(r["kind"])
@@ -368,7 +435,12 @@ func _visit_keeper() -> void:
 				hp = mini(max_hp, hp + int(p[1]))
 			"atk":
 				atk += int(p[1])
-	_play_cutscene([kb], _next_room)
+	var kid := "keeper1"
+	if floor_num == 5:
+		kid = "keeper2"
+	elif floor_num == 8:
+		kid = "keeper3"
+	_play_cutscene([kb], func(): _maybe_whisper(kid, _next_room))
 
 func _pick_monster() -> Dictionary:
 	var tier := 0
@@ -403,6 +475,15 @@ func _do(do: String) -> void:
 			_win()
 		"cs_next":
 			_advance_cutscene()
+		"whisper_next":
+			_cs_done.call()
+		"codex":
+			if parts.size() > 1 and parts[1] != "locked":
+				_show_whisper_entry(parts[1])
+			else:
+				_show_codex()
+		"codex_back":
+			_show_codex()
 		"pack":
 			gold += 14
 			potions += 1
@@ -448,11 +529,12 @@ func _do(do: String) -> void:
 			_pending_choices = []
 			_choice("Continue", "nothing")
 		"whispers":
+			var wtail := _whisper_tail("the_throat")
 			if randf() < 0.5:
 				hp = mini(max_hp, hp + 6)
-				_say("\"BELOW THE SAINT, THE DARK WEARS YOUR FACE.\" The whispering stops. You feel steadied. (+6 HP)")
+				_say("\"BELOW THE SAINT, THE DARK WEARS YOUR FACE.\" The whispering stops. You feel steadied. (+6 HP)" + wtail)
 			else:
-				_hurt(4, "The whispers crawl inside your skull and nest there. (-4 HP)")
+				_hurt(4, "The whispers crawl inside your skull and nest there. (-4 HP)" + wtail)
 		"cage":
 			if randf() < 0.6:
 				potions += 1
@@ -468,13 +550,13 @@ func _do(do: String) -> void:
 			_start_fight(Content.MONSTERS[1])
 		"mirror":
 			atk += 2
-			_hurt(6, "Power floods your arms. Something takes its price in blood. (+2 ATK, -6 HP)")
+			_hurt(6, "Power floods your arms. Something takes its price in blood. (+2 ATK, -6 HP)" + _whisper_tail("mirror"))
 		"gamble":
 			var bet := int(parts[1])
 			gold -= bet
 			if randf() < 0.45:
 				gold += bet * 2
-				_say("The dice clatter... doubles. The shade laughs and pays out. (+%d gold)" % bet)
+				_say("The dice clatter... doubles. The shade laughs and pays out. (+%d gold)" % bet + _whisper_tail("gambler"))
 			else:
 				_say("Snake eyes. The shade pockets your gold with fingers like twigs. (-%d gold)" % bet)
 			_pending_choices = []
@@ -509,7 +591,8 @@ func _start_boss(idx: int) -> void:
 	if idx == 2:
 		_play_cutscene(Content.BOSS_CUTSCENES[idx], _gloam_choice)
 	else:
-		_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _start_fight(b, true))
+		var wid := "the_warden" if idx == 0 else "starved_saint"
+		_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _maybe_whisper(wid, func(): _start_fight(b, true)))
 
 func _gloam_choice() -> void:
 	mode = "room"
@@ -587,7 +670,7 @@ func _win_fight(log: String) -> void:
 	fight_is_boss = false
 	mode = "room"
 	_set_art("corridor")
-	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain])
+	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain] + (_whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""))
 	_pending_choices = []
 	_choice("Continue", "win_go" if final else "nothing")
 
@@ -651,7 +734,7 @@ const SAVE_PATH := "user://gloam.save"
 func _save_best() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_var({"best": best_depth, "endings": endings_found})
+		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found})
 		f.close()
 
 func _load_best() -> void:
@@ -662,4 +745,5 @@ func _load_best() -> void:
 		var d: Dictionary = f.get_var()
 		best_depth = int(d.get("best", 0))
 		endings_found = d.get("endings", [])
+		whispers_found = d.get("whispers", [])
 		f.close()
