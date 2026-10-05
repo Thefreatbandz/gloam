@@ -118,5 +118,26 @@ const ROOMS := [
 
 const STAIR_TEXT := "A stair spirals down into deeper dark. The air gets colder. The whispering gets clearer."
 const FLOOR_NAMES := ["", "The Throat", "The Gullet", "The Warden's Door", "The Hollow Choir", "The Drowned Chapel", "The Saint's Door", "The Marrow Deep", "The Unraveling", "ITSELF"]
+
+# cutscene panels: {"art":..., "text":...}
+const BOSS_CUTSCENES := [
+	[
+		{"art": "boss1_approach", "text": "The corridor narrows. The walls here aren't stone — they're teeth, set in humming rows.\n\nAhead, a door grins at you."},
+		{"art": "boss", "text": "The stair ends at a door made of teeth. It opens like a mouth.\n\nThe Warden unfolds from the dark — tall as the room, grinning with a hundred borrowed smiles.\n\n\"ANOTHER ONE,\" it says, with everyone's voice at once. \"COME. BE COUNTED.\""},
+	],
+	[
+		{"art": "shrine", "text": "You smell wax and stagnant water.\n\nA drowned chapel opens before you — rows of black candles burning without melting. Something thin hangs above the altar.\n\nIt is breathing."},
+		{"art": "boss", "text": "The chapel below the chapel. Candles that burn black.\n\nThe Saint hangs above the altar, thin as a prayer, eyes like embers.\n\n\"I fasted,\" she whispers, \"so that I would never hunger again. Look how well it worked.\""},
+	],
+	[
+		{"art": "corridor", "text": "The last corridor. Your lantern light doesn't reach the walls anymore — or there are no walls.\n\nThe dark presses close. Curious.\n\nIt is trying on your shape."},
+		{"art": "boss", "text": "There is no floor nine. There is only the dark, and the dark has a face now.\n\nIt wears the village. It wears the chapel. It is wearing your shape, poorly.\n\n\"STAY,\" it says, in your voice. \"IT'S WARM DOWN HERE.\""},
+	],
+]
+
+const TIER_CUTSCENES := {
+	4: [{"art": "deep4", "text": "FOUR FLOORS DOWN\n\nThe singing starts here. Not voices — the stones themselves, humming the hymn from the chapel upstairs.\n\nYour lantern burns lower, as if afraid."}],
+	7: [{"art": "trap", "text": "SEVEN FLOORS DOWN\n\nThe dark stops pretending to be stone. Everything down here is sharp, or hungry, or both.\n\nThe whispering knows your name now."}],
+}
 const DEATH_TEXT := "The dark takes you the way it takes everyone — gently, then all at once.\n\nYour lantern gutters out. Somewhere above, a bell rings once, and stops."
 const WIN_TEXT := "It lets go.\n\nYou climb with the last of your strength, up through the teeth-door, up through the chapels, up into grey morning light.\n\nVesper is still silent. But the whispering has stopped.\n\nYou walk out of the village and do not look back."

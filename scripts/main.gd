@@ -220,6 +220,30 @@ func _refresh_status() -> void:
 	floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
 	gold_label.text = "%d gold" % gold
 
+# ---------------- cutscenes ----------------
+var _cs_panels: Array = []
+var _cs_idx := 0
+var _cs_done: Callable
+
+func _play_cutscene(panels: Array, on_done: Callable) -> void:
+	mode = "cutscene"
+	_cs_panels = panels
+	_cs_idx = 0
+	_cs_done = on_done
+	_advance_cutscene()
+
+func _advance_cutscene() -> void:
+	if _cs_idx >= _cs_panels.size():
+		_cs_done.call()
+		return
+	var p: Dictionary = _cs_panels[_cs_idx]
+	_set_art(String(p["art"]))
+	_refresh_status()
+	_say(String(p["text"]))
+	_pending_choices = []
+	_choice("Continue", "cs_next")
+	_cs_idx += 1
+
 # ---------------- flow ----------------
 func _show_title() -> void:
 	mode = "title"
@@ -287,7 +311,10 @@ func _next_room() -> void:
 		if floor_num - 1 > best_depth:
 			best_depth = floor_num - 1
 			_save_best()
-		_begin_floor()
+		if Content.TIER_CUTSCENES.has(floor_num):
+			_play_cutscene(Content.TIER_CUTSCENES[floor_num], _begin_floor)
+		else:
+			_begin_floor()
 		return
 	var r: Dictionary = room_queue.pop_front()
 	var kind := String(r["kind"])
@@ -295,7 +322,7 @@ func _next_room() -> void:
 		"fight":
 			_start_fight(_pick_monster())
 		"boss":
-			_start_boss()
+			_start_boss(floor_num / 3 - 1)
 		"stairs":
 			_set_art("intro2")
 			_say(Content.STAIR_TEXT)
@@ -341,6 +368,8 @@ func _do(do: String) -> void:
 			_next_room()
 		"boss_go":
 			_start_fight(Content.BOSSES[int(parts[1])])
+		"cs_next":
+			_advance_cutscene()
 		"pack":
 			gold += 14
 			potions += 1
@@ -441,12 +470,8 @@ func _start_fight(m: Dictionary) -> void:
 	_refresh_status()
 	_combat_text(String(m["desc"]) + "\n\nA %s blocks your path!" % String(m["name"]))
 
-func _start_boss() -> void:
-	var b: Dictionary = Content.BOSSES[floor_num / 3 - 1]
-	_set_art("boss")
-	_say(String(b["text"]))
-	_pending_choices = []
-	_choice("Face it", "boss_go:" + str(floor_num / 3 - 1))
+func _start_boss(idx: int) -> void:
+	_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _start_fight(Content.BOSSES[idx]))
 
 func _combat_text(t: String) -> void:
 	_say(t + "\n\n%s — HP %d/%d" % [String(enemy["name"]), enemy_hp, int(enemy["hp"])])
