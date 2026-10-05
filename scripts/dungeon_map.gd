@@ -9,6 +9,7 @@ var current := 0
 var special: Array = []    # per node: "" | "stairs" | "boss" | "depths" | "labyrinth"
 
 func _draw() -> void:
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.04, 0.03, 0.05))
 	if pts.is_empty():
 		return
 	for l in links:
@@ -17,13 +18,13 @@ func _draw() -> void:
 		var known: bool = visited[a] or visited[b]
 		if not known:
 			continue
-		var col := Color(0.55, 0.42, 0.2, 0.85) if (visited[a] and visited[b]) else Color(0.35, 0.3, 0.22, 0.4)
+		var col := Color(0.72, 0.58, 0.3, 0.9) if (visited[a] and visited[b]) else Color(0.5, 0.42, 0.3, 0.65)
 		draw_line(pts[a], pts[b], col, 3.0)
 	for i in pts.size():
 		var revealed: bool = visited[i] or _glimpsed(i)
 		if not revealed:
 			continue
-		var c := Color(0.3, 0.3, 0.33)
+		var c := Color(0.5, 0.52, 0.6)
 		if i == current:
 			c = Color(0.8, 0.12, 0.12)
 		elif special[i] == "stairs":
@@ -35,7 +36,7 @@ func _draw() -> void:
 		elif special[i] == "labyrinth":
 			c = Color(0.2, 0.45, 0.5)
 		elif visited[i]:
-			c = Color(0.62, 0.5, 0.24)
+			c = Color(0.78, 0.62, 0.3)
 		draw_circle(pts[i], 11.0, c)
 		if i == current:
 			draw_arc(pts[i], 16.0, 0, TAU, 24, Color(0.8, 0.12, 0.12, 0.7), 2.0)

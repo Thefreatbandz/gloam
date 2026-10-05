@@ -8,6 +8,46 @@ const INTRO := [
 	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp. Go find her."},
 ]
 
+const WEAPONS := [
+	{"id": "rusty", "name": "Rusty Blade", "atk": 0, "desc": "Your old blade. It has never once let you down, which is to say: it has never once been enough."},
+	{"id": "soldier", "name": "Soldier's Sword", "atk": 2, "desc": "Your war blade, lost on the road home. The edge remembers the Ashen War. So do you."},
+	{"id": "axe", "name": "Executioner's Axe", "atk": 4, "desc": "Heavy as a verdict. It drinks deep and asks nothing."},
+	{"id": "gloambrand", "name": "Gloambrand", "atk": 6, "desc": "Forged from the dark itself. It hums your name when you sleep — which is never, down here."},
+]
+
+const ARMORS := [
+	{"id": "rags", "name": "Torn Rags", "def": 0, "desc": "What you marched home in."},
+	{"id": "leather", "name": "Leather Jerkin", "def": 1, "desc": "Scuffed, patched, smells of rain. Blocks 1 damage."},
+	{"id": "chain", "name": "Chainmail", "def": 2, "desc": "Some dead soldier's second skin. Blocks 2 damage."},
+	{"id": "gloamplate", "name": "Gloamplate", "def": 3, "desc": "Black plates that drink the lantern light. Blocks 3 damage."},
+]
+
+const CHARMS := [
+	{"id": "none", "name": "No charm", "desc": ""},
+	{"id": "ember", "name": "Ember Charm", "desc": "A coal that never cools. Burns enemies for 3 at the start of every fight."},
+	{"id": "ward", "name": "Ward Charm", "desc": "A saint's finger-bone. Blocks the first hit of every fight."},
+	{"id": "leech", "name": "Leech Charm", "desc": "A fat black leech in a locket. Heals you 2 whenever you kill."},
+	{"id": "moth", "name": "Lantern Moth", "desc": "It eats darkness and shits gold. +50% gold from fights."},
+]
+
+const DEAD_NOTES := [
+	"If you read this, don't go deeper. The bells were a warning. I didn't listen either.",
+	"Tell my wife the cellar hid the money. Tell my son I was brave. One of those is true.",
+	"I counted the doors. There are more doors than yesterday. Don't trust the count.",
+	"The Keeper lies. The lantern isn't blue, it's just cold. Cold looks blue down here.",
+	"Mira — if that's really your name, little one — I left you half my bread by the third stair. Run.",
+	"I stopped being hungry on day nine. That's when I got scared.",
+]
+
+const CARVINGS := [
+	"DAY 12 — THE WALLS BREATHE. DON'T SLEEP FACING THEM.",
+	"Forgive me. I ate the dog first. Then I ate the silence.",
+	"If the bells ring, it's already too late. Plug your ears and run UP.",
+	"She walks here. The little one with the blue scarf. She hums.",
+	"I was a king's man. Now I'm a wall's man. The wall pays better.",
+	"Don't drink the water that sings. Don't follow the water that doesn't.",
+]
+
 const MIRA_TRACES := {
 	2: {"title": "Mira's Scarf", "text": "A woolen scarf, blue as a summer sky, tied to a stone.\n\nMira's. She hated the dark.\n\nShe came down anyway."},
 	5: {"title": "Mira's Carving", "text": "Knife-cuts in the wall, small and careful:\n\n'MIRA WAS HERE. DON'T FOLLOW.'\n\nThe cuts are old. The dust over them is not."},
@@ -42,6 +82,8 @@ const MONSTERS := [
 		"desc": "It is coming apart and it wants you to hold it together. Its hands are so cold."},
 	{"name": "Choir Master", "hp": 44, "atk": 8, "gold": [28, 42], "art": "beast",
 		"desc": "It conducts with a spine for a baton. The song it is building needs one more voice. Yours."},
+	{"name": "The Unnamed", "hp": 52, "atk": 10, "gold": [32, 48], "art": "mon_unnamed",
+		"desc": "It has no face because it gave its name away, and something else is wearing it now. It wants yours too."},
 ]
 
 const BOSSES := [
@@ -137,6 +179,36 @@ const ROOMS := [
 		"choices": [
 			{"label": "Bet 15 gold", "do": "gamble:15"},
 			{"label": "Refuse", "do": "nothing"},
+		]},
+	{"art": "lost_soul", "kind": "lost",
+		"text": "A villager — from Vesper, by the cut of their coat — clutching a dying lantern.\n\n'Please. I can't find the way up. I can't find the way anywhere.'",
+		"sting": "Their lantern follows you with its dying eye until the dark takes it.",
+		"choices": [
+			{"label": "Guide them to the stairs", "do": "soul_guide"},
+			{"label": "Rob them (30 gold)", "do": "soul_rob"},
+			{"label": "Leave them", "do": "soul_leave"},
+		]},
+	{"art": "trapped", "kind": "trapped",
+		"text": "A fallen beam. A hand reaching out from under it, still moving.\n\n'Help — please — I can hear it coming back —'",
+		"sting": "The beam settles behind you with a sound like a sigh.",
+		"choices": [
+			{"label": "Free them", "do": "trap_free"},
+			{"label": "Leave them", "do": "trap_leave"},
+		]},
+	{"art": "dead_note", "kind": "dead",
+		"text": "A skeleton in rotted clothes, slumped against the wall. A folded note is clutched in its hand.\n\nSomeone's whole life, down to one page.",
+		"sting": "You fold the note into your pack. The dark is full of last words.",
+		"choices": [
+			{"label": "Read the note", "do": "dead_read"},
+			{"label": "Take their supplies", "do": "dead_loot"},
+			{"label": "Say a prayer", "do": "dead_pray"},
+		]},
+	{"art": "carving", "kind": "carving",
+		"text": "The wall is covered in scratches — tally marks, warnings, names worn smooth by desperate fingers.\n\nSomeone was here. Someone is always here.",
+		"sting": "You add nothing. Some walls are already full.",
+		"choices": [
+			{"label": "Read the scratches", "do": "carve_read"},
+			{"label": "Move on", "do": "nothing"},
 		]},
 ]
 

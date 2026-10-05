@@ -19,6 +19,18 @@ var gold := 0
 var potions := 2
 var floor_num := 1
 const DungeonMap = preload("res://scripts/dungeon_map.gd")
+
+const SFX := {
+	"click": preload("res://assets/audio/click.wav"),
+	"hit": preload("res://assets/audio/hit.wav"),
+	"hurt": preload("res://assets/audio/hurt.wav"),
+	"potion": preload("res://assets/audio/potion.wav"),
+	"gold": preload("res://assets/audio/gold.wav"),
+	"death": preload("res://assets/audio/death.wav"),
+	"whisper": preload("res://assets/audio/whisper.wav"),
+	"stairs": preload("res://assets/audio/stairs.wav"),
+}
+const AMBIENT := preload("res://assets/audio/ambient.wav")
 var intro_idx := 0
 var enemy := {}
 var enemy_hp := 0
@@ -33,6 +45,16 @@ var pondered: Array = []
 var endless := false
 var death_cause := ""
 var keeper_total := 0
+var weapon_tier := 0
+var armor_tier := 0
+var charms_owned: Array = []
+var souls_saved := 0
+var souls_doomed := 0
+var ward_blocked := false
+var sfx_player: AudioStreamPlayer
+var amb_player: AudioStreamPlayer
+var snd_btn: Button
+var sound_on := true
 var dungeon: Array = []
 var cur_node := 0
 var _after_fight := ""
@@ -94,14 +116,14 @@ func _build_ui() -> void:
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(frame)
 	# status row
-	floor_label = _mk_label("", 24, Vector2(20, 494), Vector2(400, 36), DIM)
-	gold_label = _mk_label("", 24, Vector2(550, 494), Vector2(150, 36), GOLD_C)
+	floor_label = _mk_label("", 24, Vector2(20, 494), Vector2(330, 36), DIM)
+	gold_label = _mk_label("", 24, Vector2(580, 494), Vector2(120, 36), GOLD_C)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	# map button
 	var map_btn := Button.new()
 	map_btn.text = "MAP"
-	map_btn.position = Vector2(430, 486)
-	map_btn.custom_minimum_size = Vector2(110, 44)
+	map_btn.position = Vector2(360, 486)
+	map_btn.custom_minimum_size = Vector2(100, 44)
 	map_btn.add_theme_font_size_override("font_size", 22)
 	map_btn.add_theme_color_override("font_color", INK)
 	var mbs := StyleBoxFlat.new()
@@ -115,6 +137,28 @@ func _build_ui() -> void:
 	map_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	map_btn.pressed.connect(_toggle_map)
 	add_child(map_btn)
+	# sound toggle
+	snd_btn = Button.new()
+	snd_btn.text = "SND"
+	snd_btn.position = Vector2(470, 486)
+	snd_btn.custom_minimum_size = Vector2(100, 44)
+	snd_btn.add_theme_font_size_override("font_size", 22)
+	snd_btn.add_theme_color_override("font_color", INK)
+	snd_btn.add_theme_stylebox_override("normal", mbs)
+	snd_btn.add_theme_stylebox_override("hover", mbs)
+	snd_btn.add_theme_stylebox_override("pressed", mbs)
+	snd_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	snd_btn.pressed.connect(_toggle_sound)
+	add_child(snd_btn)
+	# audio players
+	sfx_player = AudioStreamPlayer.new()
+	add_child(sfx_player)
+	amb_player = AudioStreamPlayer.new()
+	var amb: AudioStreamWAV = AMBIENT
+	amb.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	amb_player.stream = amb
+	amb_player.volume_db = -14.0
+	add_child(amb_player)
 	# map overlay
 	map_panel = PanelContainer.new()
 	map_panel.position = Vector2(40, 220)
@@ -169,12 +213,12 @@ func _build_ui() -> void:
 	hfill.set_corner_radius_all(6)
 	hp_bar.add_theme_stylebox_override("fill", hfill)
 	add_child(hp_bar)
-	hp_label = _mk_label("", 22, Vector2(20, 560), Vector2(680, 30), INK)
+	hp_label = _mk_label("", 22, Vector2(20, 556), Vector2(680, 66), INK)
 	# text (tap to skip typewriter)
 	text_label = RichTextLabel.new()
-	text_label.position = Vector2(20, 596)
-	text_label.custom_minimum_size = Vector2(680, 300)
-	text_label.size = Vector2(680, 300)
+	text_label.position = Vector2(20, 628)
+	text_label.custom_minimum_size = Vector2(680, 268)
+	text_label.size = Vector2(680, 268)
 	text_label.add_theme_font_size_override("normal_font_size", 27)
 	text_label.add_theme_color_override("default_color", INK)
 	text_label.scroll_active = false
@@ -275,6 +319,8 @@ func _choice(label: String, do: String) -> void:
 func _on_choice(ch: Dictionary) -> void:
 	_clear_choices()
 	var do := String(ch["do"])
+	if not do.begins_with("c_"):
+		_sfx("click")
 	match do:
 		"c_strike", "c_heavy", "c_guard", "c_potion":
 			_combat_round(do)
@@ -287,7 +333,13 @@ func _on_choice(ch: Dictionary) -> void:
 func _refresh_status() -> void:
 	hp_bar.max_value = max_hp
 	hp_bar.value = hp
-	hp_label.text = "HP %d/%d   ATK %d   Potions %d" % [hp, max_hp, atk, potions]
+	var wname := String(_gear(Content.WEAPONS, weapon_tier)["name"])
+	var aname := String(_gear(Content.ARMORS, armor_tier)["name"])
+	var cname := _charm_name(_charm())
+	var gearline := "%s · %s" % [wname, aname]
+	if cname != "":
+		gearline += " · %s" % cname
+	hp_label.text = "HP %d/%d   ATK %d   Potions %d\n%s" % [hp, max_hp, _watk(), potions, gearline]
 	if floor_num <= 9:
 		floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
 	else:
@@ -323,6 +375,7 @@ func _maybe_whisper(id: String, on_done: Callable) -> void:
 	if t == "":
 		on_done.call()
 		return
+	_sfx("whisper")
 	_set_art("whisper")
 	_refresh_status()
 	_say("— WHISPER UNCOVERED —\n\n%s\n\nRead it in the Codex." % t)
@@ -339,13 +392,13 @@ func _show_codex() -> void:
 	_typewriter_done = true
 	_clear_choices()
 	_pending_choices = []
+	_choice("Back", "title")
 	for w in Content.WHISPERS:
 		var wd: Dictionary = w
 		if String(wd["id"]) in whispers_found:
 			_choice(String(wd["title"]), "codex:" + String(wd["id"]))
 		else:
 			_choice("? ? ?", "codex:locked")
-	_choice("Back", "title")
 	_show_choices()
 
 func _show_whisper_entry(id: String) -> void:
@@ -386,6 +439,7 @@ func _show_title() -> void:
 	mode = "title"
 	_set_art("title")
 	_refresh_status()
+	snd_btn.text = "SND" if sound_on else "OFF"
 	var extra := ""
 	if best_depth > 0:
 		extra += "\n\nBest depth: floor %d" % best_depth
@@ -393,6 +447,8 @@ func _show_title() -> void:
 		extra += "\nEndings found: %d/6" % endings_found.size()
 	if keeper_total >= 3:
 		extra += "\nThe Keeper's favor: +1 potion each descent"
+	if souls_saved + souls_doomed > 0:
+		extra += "\nSouls guided: %d · Souls lost: %d" % [souls_saved, souls_doomed]
 	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra)
 	_pending_choices = []
 	_choice("DESCEND", "start")
@@ -413,6 +469,12 @@ func _start_run() -> void:
 	endless = false
 	death_cause = ""
 	pondered = []
+	weapon_tier = 0
+	armor_tier = 0
+	charms_owned = []
+	ward_blocked = false
+	if sound_on and not amb_player.playing:
+		amb_player.play()
 	_show_intro()
 
 func _show_intro() -> void:
@@ -491,7 +553,7 @@ func _gen_dungeon(f: int) -> void:
 		(dungeon[stairs_id] as Dictionary)["special"] = "stairs"
 	(dungeon[0] as Dictionary)["kind"] = "fight"
 	(dungeon[0] as Dictionary)["data"] = {"monster": "pick"}
-	var kinds := ["fight", "fight", "fight", "treasure", "treasure", "trap", "shrine", "event", "event"]
+	var kinds := ["fight", "fight", "fight", "treasure", "treasure", "trap", "shrine", "event", "lost", "trapped", "dead", "carving"]
 	if Content.KEEPER_BEATS.has(f):
 		kinds.append("keeper")
 	while kinds.size() < count - 3:
@@ -521,7 +583,7 @@ func _gen_dungeon(f: int) -> void:
 			nd["data"] = {"monster": "pick"}
 		elif kind == "keeper":
 			nd["data"] = {}
-		elif kind in ["treasure", "trap", "shrine", "event"]:
+		elif kind in ["treasure", "trap", "shrine", "event", "lost", "trapped", "dead", "carving"]:
 			var lst: Array = by_kind.get(kind, [])
 			if lst.is_empty():
 				nd["kind"] = "fight"
@@ -631,6 +693,8 @@ func _room_choices(nd: Dictionary) -> void:
 				unp += 1
 		if unp > 0 and hp > 4:
 			_choice("Ponder a whisper (%d)" % unp, "ponder")
+	if String(nd["kind"]) == "treasure":
+		_choice("Search for arms & armor", "gear_hunt")
 	_show_choices()
 
 func _show_exits(revisit := false) -> void:
@@ -673,6 +737,7 @@ func _run_mira() -> void:
 	_choice("Continue", "nothing")
 
 func _descend() -> void:
+	_sfx("stairs")
 	floor_num += 1
 	if floor_num - 1 > best_depth:
 		best_depth = floor_num - 1
@@ -690,6 +755,25 @@ func _descend() -> void:
 	elif floor_num == 9:
 		after = func(): _maybe_whisper("the_gloam", _begin_floor)
 	_play_cutscene(Content.TIER_CUTSCENES[floor_num], after)
+
+func _toggle_sound() -> void:
+	sound_on = not sound_on
+	snd_btn.text = "SND" if sound_on else "OFF"
+	_save_best()
+	if sound_on:
+		if not amb_player.playing:
+			amb_player.play()
+	else:
+		amb_player.stop()
+
+func _sfx(n: String) -> void:
+	if not sound_on:
+		return
+	var s: AudioStreamWAV = SFX.get(n)
+	if s == null:
+		return
+	sfx_player.stream = s
+	sfx_player.play()
 
 func _toggle_map() -> void:
 	if map_panel == null or dungeon.is_empty():
@@ -853,6 +937,89 @@ func _do(do: String) -> void:
 			_advance_cutscene()
 		"whisper_next":
 			_cs_done.call()
+		"gear_hunt":
+			_gear_hunt()
+			return
+		"soul_guide":
+			souls_saved += 1
+			max_hp += 2
+			hp = mini(max_hp, hp + 2)
+			_save_best()
+			_say("You walk them to the stair and point up.\n\n'Go. Don't stop. Don't look at the walls.'\n\nThey go. Something in you stands a little straighter. (+2 max HP)\n\n— SOUL GUIDED (%d) —" % souls_saved)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"soul_rob":
+			souls_doomed += 1
+			gold += 30
+			_save_best()
+			_say("You take their purse, their lantern oil, their hope. They don't even fight.\n\nThey just stand there, getting smaller in the dark behind you.\n\n(+30 gold)\n\n— SOUL DOOMED (%d) —" % souls_doomed)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"soul_leave":
+			souls_doomed += 1
+			_save_best()
+			_say("You leave them with the dying lantern.\n\nYou tell yourself someone else will come. No one else is coming.\n\n— SOUL DOOMED (%d) —" % souls_doomed)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"trap_free":
+			souls_saved += 1
+			_save_best()
+			var unowned2: Array = []
+			for c in Content.CHARMS:
+				var cid := String((c as Dictionary)["id"])
+				if cid != "none" and not cid in charms_owned:
+					unowned2.append(c)
+			var tail2 := ""
+			if not unowned2.is_empty():
+				var pick2: Dictionary = unowned2[randi() % unowned2.size()]
+				charms_owned.append(String(pick2["id"]))
+				tail2 = "\n\n'Take this,' they whisper, pressing something into your hand: a %s.\n\n%s" % [String(pick2["name"]), String(pick2["desc"])]
+			else:
+				max_hp += 2
+				hp = mini(max_hp, hp + 2)
+				tail2 = "\n\nThey grip your arm. 'I owe you my life.' Something in you stands straighter. (+2 max HP)"
+			_say("You heave the beam up. They crawl out, gasping, alive.%s\n\n— SOUL GUIDED (%d) —" % [tail2, souls_saved])
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"trap_leave":
+			souls_doomed += 1
+			_save_best()
+			_say("You keep walking. Behind you, the hand stops moving.\n\nYou don't turn around. That's the worst part — how easy it is not to turn around.\n\n— SOUL DOOMED (%d) —" % souls_doomed)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"dead_read":
+			var note: String = Content.DEAD_NOTES[randi() % Content.DEAD_NOTES.size()]
+			_say("The paper is brittle. The handwriting shakes:\n\n\"%s\"" % note)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+		"dead_loot":
+			var lg := randi_range(15, 30)
+			gold += lg
+			_say("You take their coins and a half-empty flask. The dead don't need them.\n\nYou tell yourself they'd want you to have them. (+%d gold)" % lg)
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"dead_pray":
+			hp = mini(max_hp, hp + 4)
+			_say("You say the chapel words over them. Your voice shakes on the old syllables.\n\nSomehow, you feel steadier. (+4 HP)")
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
+		"carve_read":
+			var cv: String = Content.CARVINGS[randi() % Content.CARVINGS.size()]
+			var tail3 := ""
+			if randf() < 0.2:
+				atk += 1
+				tail3 = "\n\nThe scratches teach you something about surviving down here. (+1 ATK)"
+			_say("You read by lantern light:\n\n\"%s\"%s" % [cv, tail3])
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
 		"ponder":
 			var pid := ""
 			for w in Content.WHISPERS:
@@ -974,12 +1141,31 @@ func _hurt(n: int, msg: String, cont := true) -> void:
 		_choice("Continue", "nothing")
 
 # ---------------- combat ----------------
+func _gear(list: Array, tier: int) -> Dictionary:
+	return list[mini(tier, list.size() - 1)]
+
+func _watk() -> int:
+	return atk + int(_gear(Content.WEAPONS, weapon_tier)["atk"])
+
+func _adef() -> int:
+	return int(_gear(Content.ARMORS, armor_tier)["def"])
+
+func _charm() -> String:
+	return String(charms_owned.back()) if not charms_owned.is_empty() else "none"
+
+func _charm_name(cid: String) -> String:
+	for c in Content.CHARMS:
+		if String((c as Dictionary)["id"]) == cid:
+			return String((c as Dictionary)["name"])
+	return ""
+
 func _start_fight(m: Dictionary, is_boss := false) -> void:
 	mode = "combat"
 	enemy = m
 	fight_is_boss = is_boss
 	enemy_hp = int(m["hp"])
 	guarding = false
+	ward_blocked = false
 	_set_art(String(m["art"]))
 	_refresh_status()
 	var desc := String(m["desc"])
@@ -991,6 +1177,9 @@ func _start_fight(m: Dictionary, is_boss := false) -> void:
 			tb = 1
 		var bl: Array = Content.BARKS[tb]
 		desc = "\"%s\"\n\n%s" % [String(bl[randi() % bl.size()]), desc]
+	if _charm() == "ember" and not is_boss:
+		enemy_hp -= 3
+		desc += "\n\nYour Ember Charm flares — the thing shrieks as fire takes it. (-3)"
 	_combat_text(desc + "\n\nA %s blocks your path!" % String(m["name"]))
 
 func _start_boss(idx: int) -> void:
@@ -1035,14 +1224,16 @@ func _combat_round(action: String) -> void:
 	# player action
 	match action:
 		"c_strike":
-			var dmg := atk + randi_range(-1, 2)
+			var dmg := _watk() + randi_range(-1, 2)
 			enemy_hp -= dmg
 			log += "You strike for %d. " % dmg
+			_sfx("hit")
 		"c_heavy":
 			if randf() < 0.65:
-				var dmg2 := int(atk * 1.7) + randi_range(0, 2)
+				var dmg2 := int(_watk() * 1.7) + randi_range(0, 2)
 				enemy_hp -= dmg2
 				log += "Your heavy blow lands for %d! " % dmg2
+				_sfx("hit")
 			else:
 				log += "Your heavy swing misses! "
 		"c_guard":
@@ -1053,6 +1244,7 @@ func _combat_round(action: String) -> void:
 				potions -= 1
 				hp = mini(max_hp, hp + 14)
 				log += "You drink. Warmth returns. (+14 HP) "
+				_sfx("potion")
 			else:
 				log += "No potions left! "
 	if enemy_hp <= 0:
@@ -1060,18 +1252,64 @@ func _combat_round(action: String) -> void:
 		return
 	# enemy turn
 	var edmg := int(enemy["atk"]) + randi_range(-1, 2)
+	if _charm() == "ward" and not ward_blocked:
+		ward_blocked = true
+		edmg = 0
+		log += "Your Ward Charm flares — the blow never lands. "
 	if guarding:
 		edmg = maxi(1, edmg / 2)
 		guarding = false
 		log += "You block the worst of it. "
+	edmg = maxi(0 if edmg == 0 else 1, edmg - _adef())
 	hp -= edmg
 	log += "%s hits you for %d." % [String(enemy["name"]), edmg]
+	if edmg > 0:
+		_sfx("hurt")
 	if hp <= 0:
 		death_cause = "boss" if fight_is_boss else "combat"
 		_die()
 		return
 	_refresh_status()
 	_combat_text(log)
+
+func _boss_gear_drop() -> String:
+	if weapon_tier < Content.WEAPONS.size() - 1 and (armor_tier >= Content.ARMORS.size() - 1 or randf() < 0.6):
+		weapon_tier += 1
+		var w: Dictionary = _gear(Content.WEAPONS, weapon_tier)
+		return "\n\nAmong the remains: a %s. You take it. (+%d ATK)" % [String(w["name"]), int(w["atk"])]
+	elif armor_tier < Content.ARMORS.size() - 1:
+		armor_tier += 1
+		var a: Dictionary = _gear(Content.ARMORS, armor_tier)
+		return "\n\nAmong the remains: %s. You strap it on. (blocks %d)" % [String(a["name"]), int(a["def"])]
+	return ""
+
+func _gear_hunt() -> void:
+	var roll := randf()
+	if roll < 0.45 and weapon_tier < Content.WEAPONS.size() - 1:
+		weapon_tier += 1
+		var w: Dictionary = _gear(Content.WEAPONS, weapon_tier)
+		_say("Behind the rubble: a weapon rack, untouched.\n\nYou take the %s. (+%d ATK)\n\n%s" % [String(w["name"]), int(w["atk"]), String(w["desc"])])
+	elif roll < 0.75 and armor_tier < Content.ARMORS.size() - 1:
+		armor_tier += 1
+		var a: Dictionary = _gear(Content.ARMORS, armor_tier)
+		_say("Behind the rubble: an armory niche, still sealed.\n\nYou strap on the %s. (blocks %d)\n\n%s" % [String(a["name"]), int(a["def"]), String(a["desc"])])
+	else:
+		var unowned: Array = []
+		for c in Content.CHARMS:
+			var cid := String((c as Dictionary)["id"])
+			if cid != "none" and not cid in charms_owned:
+				unowned.append(c)
+		if not unowned.is_empty():
+			var pick: Dictionary = unowned[randi() % unowned.size()]
+			charms_owned.append(String(pick["id"]))
+			_say("In a rotted pouch: a %s.\n\n%s" % [String(pick["name"]), String(pick["desc"])])
+		else:
+			var gg := randi_range(20, 40)
+			gold += gg
+			_say("Nothing but old iron and older bones. You pry loose the fittings. (+%d gold)" % gg)
+	_pending_choices = []
+	_choice("Continue", "nothing")
+	_refresh_status()
 
 func _win_fight(log: String) -> void:
 	var gain: int
@@ -1080,14 +1318,25 @@ func _win_fight(log: String) -> void:
 		gain = randi_range(int(g[0]), int(g[1]))
 	else:
 		gain = int(enemy["gold"])
+	if _charm() == "moth":
+		gain = int(gain * 1.5)
 	gold += gain
+	_sfx("gold")
+	if _charm() == "leech":
+		hp = mini(max_hp, hp + 2)
 	_refresh_status()
 	var final := fight_is_boss and floor_num == 9
 	var was_boss := fight_is_boss
 	fight_is_boss = false
 	mode = "room"
 	_set_art("corridor")
-	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain] + (_whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""))
+	var tail := "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain]
+	tail += _whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""
+	if was_boss and not final:
+		var drop := _boss_gear_drop()
+		if drop != "":
+			tail += drop
+	_say(log + tail)
 	_pending_choices = []
 	if final:
 		_choice("Continue", "final_choice")
@@ -1106,6 +1355,7 @@ func _final_choice() -> void:
 	_choice("Keep descending", "endless_go")
 
 func _die() -> void:
+	_sfx("death")
 	if floor_num > best_depth:
 		best_depth = floor_num
 		_save_best()
@@ -1119,6 +1369,11 @@ func _die() -> void:
 			kline = "'You fought,' the Keeper says. 'That's more than most. I'll keep your hour burning.'"
 		_:
 			kline = "'The dark is patient,' the Keeper says. 'It can wait. I can't.'"
+	if souls_saved + souls_doomed > 0:
+		if souls_saved >= souls_doomed:
+			kline += " 'You carried %d of them out. The dark remembers kindness too.'" % souls_saved
+		else:
+			kline += " 'You left %d of them down here. They wait for you now.'" % souls_doomed
 	panels.append({"art": "keeper", "text": kline})
 	if fight_is_boss:
 		_unlock_ending("claimed")
@@ -1176,7 +1431,7 @@ const SAVE_PATH := "user://gloam.save"
 func _save_best() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found, "mira": mira_found, "keeper_total": keeper_total})
+		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found, "mira": mira_found, "keeper_total": keeper_total, "saved": souls_saved, "doomed": souls_doomed, "sound": sound_on})
 		f.close()
 
 func _load_best() -> void:
@@ -1190,4 +1445,7 @@ func _load_best() -> void:
 		whispers_found = d.get("whispers", [])
 		mira_found = d.get("mira", [])
 		keeper_total = int(d.get("keeper_total", 0))
+		souls_saved = int(d.get("saved", 0))
+		souls_doomed = int(d.get("doomed", 0))
+		sound_on = bool(d.get("sound", true))
 		f.close()
