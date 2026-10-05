@@ -28,6 +28,11 @@ var keeper_met := 0
 var fight_is_boss := false
 var endings_found: Array = []
 var whispers_found: Array = []
+var mira_found: Array = []
+var pondered: Array = []
+var endless := false
+var death_cause := ""
+var keeper_total := 0
 var dungeon: Array = []
 var cur_node := 0
 var _after_fight := ""
@@ -283,7 +288,10 @@ func _refresh_status() -> void:
 	hp_bar.max_value = max_hp
 	hp_bar.value = hp
 	hp_label.text = "HP %d/%d   ATK %d   Potions %d" % [hp, max_hp, atk, potions]
-	floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
+	if floor_num <= 9:
+		floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
+	else:
+		floor_label.text = "DEPTH %d — BELOW ITSELF" % floor_num
 	gold_label.text = "%d gold" % gold
 
 # ---------------- whispers (collectible lore) ----------------
@@ -383,6 +391,8 @@ func _show_title() -> void:
 		extra += "\n\nBest depth: floor %d" % best_depth
 	if not endings_found.is_empty():
 		extra += "\nEndings found: %d/6" % endings_found.size()
+	if keeper_total >= 3:
+		extra += "\nThe Keeper's favor: +1 potion each descent"
 	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra)
 	_pending_choices = []
 	_choice("DESCEND", "start")
@@ -393,13 +403,16 @@ func _start_run() -> void:
 	max_hp = 30
 	atk = 6
 	gold = 0
-	potions = 2
+	potions = 2 + (1 if keeper_total >= 3 else 0)
 	floor_num = 1
 	intro_idx = 0
 	keeper_met = 0
 	fight_is_boss = false
 	guarding = false
 	_after_fight = ""
+	endless = false
+	death_cause = ""
+	pondered = []
 	_show_intro()
 
 func _show_intro() -> void:
@@ -465,7 +478,7 @@ func _gen_dungeon(f: int) -> void:
 	for i in count:
 		order.append(i)
 	order.sort_custom(func(a, b): return depth[a] > depth[b])
-	var is_boss_floor := f % 3 == 0
+	var is_boss_floor := f % 3 == 0 and f <= 9
 	var boss_id := -1
 	var stairs_id := -1
 	if is_boss_floor:
@@ -515,6 +528,13 @@ func _gen_dungeon(f: int) -> void:
 				nd["data"] = {"monster": "pick"}
 			else:
 				nd["data"] = lst.pop_back()
+	if f in [2, 5, 8]:
+		var mc := _nodes_of_kind(["event", "treasure", "trap"])
+		if not mc.is_empty():
+			var mpick: int = mc[randi() % mc.size()]
+			(dungeon[mpick] as Dictionary)["kind"] = "mira"
+			(dungeon[mpick] as Dictionary)["special"] = ""
+			(dungeon[mpick] as Dictionary)["data"] = {"trace": f}
 	if f < 9 and randf() < 0.5:
 		var dc := _nodes_of_kind(["trap", "event"])
 		if not dc.is_empty():
@@ -581,18 +601,37 @@ func _run_node() -> void:
 			_choice("Step back", "nothing")
 		"labyrinth":
 			_run_labyrinth()
+		"mira":
+			_run_mira()
 		_:
 			var r: Dictionary = nd["data"]
-			_set_art(String(r["art"]))
-			_say(String(r["text"]))
-			_pending_choices = []
-			for ch in r["choices"]:
-				var cd: Dictionary = ch
-				if String(cd["do"]).begins_with("gamble:") and gold < 15:
-					continue
-				if String(cd["do"]).begins_with("offer:") and gold < 20:
-					continue
-				_choice(String(cd["label"]), String(cd["do"]))
+			var panels := [
+				{"art": String(r["art"]), "text": String(r["text"])},
+				{"art": String(r["art"]), "text": String(r.get("sting", "The dark watches."))},
+			]
+			_play_cutscene(panels, func(): _room_choices(nd))
+
+func _room_choices(nd: Dictionary) -> void:
+	mode = "room"
+	_refresh_status()
+	var r: Dictionary = nd["data"]
+	_pending_choices = []
+	for ch in r["choices"]:
+		var cd: Dictionary = ch
+		if String(cd["do"]).begins_with("gamble:") and gold < 15:
+			continue
+		if String(cd["do"]).begins_with("offer:") and gold < 20:
+			continue
+		_choice(String(cd["label"]), String(cd["do"]))
+	if String(nd["kind"]) == "shrine":
+		var unp := 0
+		for w in Content.WHISPERS:
+			var wid := String((w as Dictionary)["id"])
+			if wid in whispers_found and not wid in pondered:
+				unp += 1
+		if unp > 0 and hp > 4:
+			_choice("Ponder a whisper (%d)" % unp, "ponder")
+	_show_choices()
 
 func _show_exits(revisit := false) -> void:
 	mode = "room"
@@ -619,14 +658,32 @@ func _run_labyrinth() -> void:
 	_choice("The middle door", "lab_door:1")
 	_choice("The right door", "lab_door:2")
 
+func _run_mira() -> void:
+	var tid := int((_node()["data"] as Dictionary).get("trace", 2))
+	var tr: Dictionary = Content.MIRA_TRACES[tid]
+	_set_art("mira_trace")
+	_refresh_status()
+	if tid in mira_found:
+		_say("Mira's trace. You've already found this one.\n\n" + String(tr["text"]))
+	else:
+		mira_found.append(tid)
+		_save_best()
+		_say(String(tr["text"]) + "\n\n— MIRA'S TRACE FOUND (%d/3) —" % mira_found.size())
+	_pending_choices = []
+	_choice("Continue", "nothing")
+
 func _descend() -> void:
 	floor_num += 1
-	if floor_num > 9:
-		_win()
-		return
 	if floor_num - 1 > best_depth:
 		best_depth = floor_num - 1
 		_save_best()
+	if floor_num > 9:
+		endless = true
+		_play_cutscene(
+			[{"art": "floor9", "text": "DEPTH %d — BELOW ITSELF\n\nThe dark down here is older. It doesn't bother with shapes anymore.\n\nNothing here knows your name. Yet." % floor_num}],
+			_begin_floor
+		)
+		return
 	var after: Callable = _begin_floor
 	if floor_num == 4:
 		after = func(): _maybe_whisper("hollow_choir", _begin_floor)
@@ -684,6 +741,8 @@ func _update_map() -> void:
 
 func _visit_keeper() -> void:
 	keeper_met += 1
+	keeper_total += 1
+	_save_best()
 	var kb: Dictionary = Content.KEEPER_BEATS[floor_num]
 	for g in String(kb["gift"]).split("+"):
 		var p := g.split(":")
@@ -713,7 +772,17 @@ func _pick_monster() -> Dictionary:
 		var idx := Content.MONSTERS.find(m)
 		if idx / 3 == tier:
 			cands.append(md)
-	return cands[randi() % cands.size()]
+	var base: Dictionary = cands[randi() % cands.size()]
+	if floor_num <= 9:
+		return base
+	var mult := 1.0 + (floor_num - 9) * 0.18
+	var m2: Dictionary = base.duplicate()
+	m2["hp"] = int(int(base["hp"]) * mult)
+	m2["atk"] = int(int(base["atk"]) * mult)
+	var g: Array = base["gold"]
+	m2["gold"] = [int(g[0] * mult), int(g[1] * mult)]
+	m2["name"] = "Deep " + String(base["name"]).trim_prefix("The ")
+	return m2
 
 # ---------------- choices ----------------
 func _do(do: String) -> void:
@@ -731,6 +800,7 @@ func _do(do: String) -> void:
 		"depths_drop":
 			var fall := randi_range(5, 9)
 			hp -= fall
+			death_cause = "dark"
 			if hp <= 0:
 				_die()
 				return
@@ -774,10 +844,32 @@ func _do(do: String) -> void:
 			_ending_stay()
 		"win_go":
 			_win()
+		"final_choice":
+			_final_choice()
+		"endless_go":
+			floor_num = 9
+			_descend()
 		"cs_next":
 			_advance_cutscene()
 		"whisper_next":
 			_cs_done.call()
+		"ponder":
+			var pid := ""
+			for w in Content.WHISPERS:
+				var wid := String((w as Dictionary)["id"])
+				if wid in whispers_found and not wid in pondered:
+					pid = wid
+					break
+			if pid != "" and hp > 4:
+				pondered.append(pid)
+				hp -= 4
+				atk += 1
+				_say("You sit with what the dark told you, and let it hurt.\n\nThe truths cost blood. They pay in edge. (-4 HP, +1 ATK)")
+			else:
+				_say("Nothing left to ponder. The dark has said all it will say — for now.")
+			_pending_choices = []
+			_choice("Continue", "nothing")
+			_refresh_status()
 		"codex":
 			if parts.size() > 1 and parts[1] != "locked":
 				_show_whisper_entry(parts[1])
@@ -872,6 +964,7 @@ func _do(do: String) -> void:
 
 func _hurt(n: int, msg: String, cont := true) -> void:
 	hp -= n
+	death_cause = "dark"
 	if hp <= 0:
 		_die()
 		return
@@ -889,7 +982,16 @@ func _start_fight(m: Dictionary, is_boss := false) -> void:
 	guarding = false
 	_set_art(String(m["art"]))
 	_refresh_status()
-	_combat_text(String(m["desc"]) + "\n\nA %s blocks your path!" % String(m["name"]))
+	var desc := String(m["desc"])
+	if not is_boss and randf() < 0.4:
+		var tb := 0
+		if floor_num >= 7:
+			tb = 2
+		elif floor_num >= 4:
+			tb = 1
+		var bl: Array = Content.BARKS[tb]
+		desc = "\"%s\"\n\n%s" % [String(bl[randi() % bl.size()]), desc]
+	_combat_text(desc + "\n\nA %s blocks your path!" % String(m["name"]))
 
 func _start_boss(idx: int) -> void:
 	var b: Dictionary = Content.BOSSES[idx]
@@ -910,7 +1012,15 @@ func _gloam_choice() -> void:
 
 func _ending_stay() -> void:
 	_unlock_ending("stay")
-	_play_cutscene(Content.END_STAY, _end_choices)
+	var panels: Array
+	if mira_found.size() >= 3:
+		panels = [
+			{"art": "boss", "text": "You kneel.\n\nThe dark rushes forward — not unkindly. It has been so lonely."},
+			{"art": "mira_trace", "text": "And she's there. Mira. Older, the way you feared she'd get.\n\n'You took your time,' she says, and takes your hand.\n\nSTAY — you found her."},
+		]
+	else:
+		panels = Content.END_STAY.duplicate()
+	_play_cutscene(panels, _end_choices)
 
 func _combat_text(t: String) -> void:
 	_say(t + "\n\n%s — HP %d/%d" % [String(enemy["name"]), enemy_hp, int(enemy["hp"])])
@@ -957,6 +1067,7 @@ func _combat_round(action: String) -> void:
 	hp -= edmg
 	log += "%s hits you for %d." % [String(enemy["name"]), edmg]
 	if hp <= 0:
+		death_cause = "boss" if fight_is_boss else "combat"
 		_die()
 		return
 	_refresh_status()
@@ -979,29 +1090,48 @@ func _win_fight(log: String) -> void:
 	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain] + (_whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""))
 	_pending_choices = []
 	if final:
-		_choice("Continue", "win_go")
+		_choice("Continue", "final_choice")
 	elif was_boss:
 		_choice("Descend to floor %d" % (floor_num + 1), "stairs_go")
 	else:
 		_choice("Continue", "nothing")
+
+func _final_choice() -> void:
+	mode = "room"
+	_set_art("escape")
+	_refresh_status()
+	_say("GLOAM ITSELF collapses into dust and silence.\n\nAbove, daylight waits. Below, the dark keeps going — deeper than nine floors, deeper than maps.\n\nIt doesn't have to end.")
+	_pending_choices = []
+	_choice("Climb into the daylight", "win_go")
+	_choice("Keep descending", "endless_go")
 
 func _die() -> void:
 	if floor_num > best_depth:
 		best_depth = floor_num
 		_save_best()
 	_refresh_status()
+	var panels: Array = []
+	var kline := ""
+	match death_cause:
+		"boss":
+			kline = "'%s kept you,' the Keeper says, its blue lantern guttering. 'It counts you now. I'll keep your hour burning.'" % String(enemy["name"])
+		"combat":
+			kline = "'You fought,' the Keeper says. 'That's more than most. I'll keep your hour burning.'"
+		_:
+			kline = "'The dark is patient,' the Keeper says. 'It can wait. I can't.'"
+	panels.append({"art": "keeper", "text": kline})
 	if fight_is_boss:
 		_unlock_ending("claimed")
 		var bn := String(enemy["name"])
-		var panels := []
 		for p in Content.END_CLAIMED:
 			var pd: Dictionary = p
 			panels.append({"art": String(pd["art"]), "text": String(pd["text"]) % bn})
 		_play_cutscene(panels, _end_choices)
 	else:
 		_unlock_ending("taken")
-		var panels2 := [{"art": "death", "text": Content.END_TAKEN[0]["text"] % floor_num}, Content.END_TAKEN[1]]
-		_play_cutscene(panels2, _end_choices)
+		panels.append({"art": "death", "text": Content.END_TAKEN[0]["text"] % floor_num})
+		panels.append(Content.END_TAKEN[1])
+		_play_cutscene(panels, _end_choices)
 	fight_is_boss = false
 
 func _win() -> void:
@@ -1024,6 +1154,7 @@ func _win() -> void:
 			var pd2: Dictionary = p
 			var t := String(pd2["text"])
 			panels.append({"art": String(pd2["art"]), "text": t % gold if "%d" in t else t})
+		panels.append({"art": "homecoming", "text": "But on the third morning, a rider comes up the valley road with war-news: the Ashen War isn't over.\n\nAnd the enemy has started digging outside Vesper.\n\nThey heard what's under the chapel."})
 	_play_cutscene(panels, _end_choices)
 
 func _end_choices() -> void:
@@ -1045,7 +1176,7 @@ const SAVE_PATH := "user://gloam.save"
 func _save_best() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found})
+		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found, "mira": mira_found, "keeper_total": keeper_total})
 		f.close()
 
 func _load_best() -> void:
@@ -1057,4 +1188,6 @@ func _load_best() -> void:
 		best_depth = int(d.get("best", 0))
 		endings_found = d.get("endings", [])
 		whispers_found = d.get("whispers", [])
+		mira_found = d.get("mira", [])
+		keeper_total = int(d.get("keeper_total", 0))
 		f.close()

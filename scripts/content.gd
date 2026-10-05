@@ -3,8 +3,21 @@ extends RefCounted
 
 const INTRO := [
 	{"art": "title", "text": "GLOAM.\n\nA horror rogue RPG.\n\nNine floors down. One way out.\n\nTap to begin your descent."},
+	{"art": "homecoming", "text": "You marched home from the Ashen War with a limp and a medal you never wanted.\n\nVesper was silent. The bells hadn't rung in three nights.\n\nAnd Mira — your little sister — had pried up the chapel stones six days ago.\n\nShe never came up."},
 	{"art": "intro1", "text": "Three nights ago, the bells of Vesper stopped ringing.\n\nNo screams. No smoke. Just silence — and then the whispering from below the chapel floor."},
-	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp. Go."},
+	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp. Go find her."},
+]
+
+const MIRA_TRACES := {
+	2: {"title": "Mira's Scarf", "text": "A woolen scarf, blue as a summer sky, tied to a stone.\n\nMira's. She hated the dark.\n\nShe came down anyway."},
+	5: {"title": "Mira's Carving", "text": "Knife-cuts in the wall, small and careful:\n\n'MIRA WAS HERE. DON'T FOLLOW.'\n\nThe cuts are old. The dust over them is not."},
+	8: {"title": "Mira's Lantern", "text": "A lantern, cold and dark, set carefully on a ledge —\n\nas if she'd be back for it any moment.\n\nShe won't."},
+}
+
+const BARKS := [
+	["Fresh meat walks in.", "The dark sent you? How kind.", "Another lantern. Another moth."],
+	["Your bones will sing with us.", "We remember being you.", "Kneel now. Save us the trouble."],
+	["IT WEARS YOUR SHAPE ALREADY.", "The deep is hungry, little lantern.", "Come. Be unmade."],
 ]
 
 const MONSTERS := [
@@ -44,18 +57,21 @@ const ROOMS := [
 	# --- treasure ---
 	{"art": "treasure", "kind": "treasure",
 		"text": "A chest, banded in iron, half-buried in dust. The lock is already broken — someone left in a hurry.",
+		"sting": "The gold is cold. Everything down here is cold — except the things that are watching.",
 		"choices": [
 			{"label": "Take the gold", "do": "gold:22"},
 			{"label": "Leave it", "do": "nothing"},
 		]},
 	{"art": "corridor", "kind": "treasure",
 		"text": "A dead delver slumps against the wall, pack still on. His lantern went out a long time ago. His coin purse didn't.",
+		"sting": "You take his purse. You leave his name. The dark keeps the rest.",
 		"choices": [
 			{"label": "Search the pack", "do": "pack"},
 			{"label": "Say a prayer, move on", "do": "heal:4"},
 		]},
 	{"art": "corridor", "kind": "treasure",
 		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled.",
+		"sting": "The whetstone sings against your blade. Somewhere, something answers.",
 		"choices": [
 			{"label": "Sharpen your blade (+1 ATK)", "do": "atk:1"},
 			{"label": "Pry loose the fittings (gold)", "do": "gold:18"},
@@ -63,12 +79,14 @@ const ROOMS := [
 	# --- traps ---
 	{"art": "trap", "kind": "trap",
 		"text": "The floor clicks under your boot. Ahead, the tiles are wrong — too clean, too even.",
+		"sting": "You don't look down. Looking down is how it starts.",
 		"choices": [
 			{"label": "Rush across", "do": "dmg:6"},
 			{"label": "Pick your way through (slow, safe)", "do": "nothing"},
 		]},
 	{"art": "trap", "kind": "trap",
 		"text": "Green vapor curls from a cracked pipe. It smells sweet, like rot and honey.",
+		"sting": "Sweet. Like rot and honey. Like the chapel incense, before.",
 		"choices": [
 			{"label": "Hold breath, push through", "do": "dmg:4"},
 			{"label": "Wait for it to thin", "do": "nothing"},
@@ -76,6 +94,7 @@ const ROOMS := [
 	# --- shrine ---
 	{"art": "shrine", "kind": "shrine",
 		"text": "A shrine to something with too many names. The candles are still lit. Someone tends this place.",
+		"sting": "The candles lean toward you as you pass. Hungry, or hopeful. You can't tell.",
 		"choices": [
 			{"label": "Pray (heal 10)", "do": "heal:10"},
 			{"label": "Offer 20 gold (full heal, +4 max HP)", "do": "offer:20"},
@@ -83,6 +102,7 @@ const ROOMS := [
 		]},
 	{"art": "shrine", "kind": "shrine",
 		"text": "A fountain of black water. It doesn't reflect your face — it reflects a face you almost remember.",
+		"sting": "Your almost-face ripples. It looks happier than you.",
 		"choices": [
 			{"label": "Drink (heal 8)", "do": "heal:8"},
 			{"label": "Fill a vial (+1 potion)", "do": "potion:1"},
@@ -91,18 +111,21 @@ const ROOMS := [
 	# --- events ---
 	{"art": "corridor", "kind": "event",
 		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out words.",
+		"sting": "The walls know your name now. They practice it when you leave.",
 		"choices": [
 			{"label": "Listen", "do": "whispers"},
 			{"label": "Keep walking", "do": "nothing"},
 		]},
 	{"art": "trap", "kind": "event",
 		"text": "A rusted cage hangs from the ceiling. Inside, a prisoner — alive, somehow. \"Free me,\" he rasps, \"and I'll make it worth your while.\"",
+		"sting": "The cage sways empty behind you. You don't turn around.",
 		"choices": [
 			{"label": "Break the lock", "do": "cage"},
 			{"label": "Leave him", "do": "nothing"},
 		]},
 	{"art": "shrine", "kind": "event",
 		"text": "A tall mirror, filmed with dust. Your reflection is already looking at you before you arrive.",
+		"sting": "Your reflection stays a moment too long after you look away.",
 		"choices": [
 			{"label": "Gaze into it (+2 ATK, -6 HP)", "do": "mirror"},
 			{"label": "Smash it", "do": "gold:10"},
@@ -110,6 +133,7 @@ const ROOMS := [
 		]},
 	{"art": "corridor", "kind": "event",
 		"text": "A shade in a gambler's coat shuffles bone dice. \"Double or nothing, delver. Feeling blessed?\"",
+		"sting": "The dice keep rolling after you leave. You can hear them. Don't go back.",
 		"choices": [
 			{"label": "Bet 15 gold", "do": "gamble:15"},
 			{"label": "Refuse", "do": "nothing"},
