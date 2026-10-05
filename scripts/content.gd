@@ -16,6 +16,11 @@ const WEAPONS := [
 	{"id": "soldier", "name": "Soldier's Sword", "atk": 2, "desc": "Your war blade, lost on the road home. The edge remembers the Ashen War. So do you."},
 	{"id": "axe", "name": "Executioner's Axe", "atk": 4, "desc": "Heavy as a verdict. It drinks deep and asks nothing."},
 	{"id": "gloambrand", "name": "Gloambrand", "atk": 6, "desc": "Forged from the dark itself. It hums your name when you sleep — which is never, down here."},
+	{"id": "bellhammer", "name": "Bellhammer", "atk": 7, "effect": "stun", "desc": "A cracked chapel bell on a haft. When it rings, the dark flinches — 25% chance to stun foes before they strike."},
+	{"id": "miraknife", "name": "Mira's Knife", "atk": 5, "effect": "heal_kill", "desc": "Her little carving knife, found in the chapel dirt. It remembers who you're fighting for — heals 3 HP on every kill."},
+	{"id": "wardenteeth", "name": "Warden's Teeth", "atk": 8, "effect": "heavy_crit", "desc": "A flail strung with the Warden's own teeth. Heavy blows crave throats — 30% chance to crit for double damage."},
+	{"id": "choirwire", "name": "Choirwire", "atk": 7, "effect": "first_blood", "desc": "A garrote of choir strings, still humming. The first strike of every fight sings — +6 damage on your opening blow."},
+	{"id": "oathkeeper", "name": "Oathkeeper", "atk": 9, "effect": "vow", "desc": "Your knight's sword, broken at the Ashen War and reforged in the dark. When you bleed, it remembers your vow — +5 ATK below half HP."},
 ]
 
 const ARMORS := [

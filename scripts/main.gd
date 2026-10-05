@@ -35,6 +35,8 @@ var intro_idx := 0
 var enemy := {}
 var enemy_hp := 0
 var guarding := false
+var combat_turns := 0
+var enemy_stunned := false
 var best_depth := 0
 var keeper_met := 0
 var fight_is_boss := false
@@ -1226,7 +1228,13 @@ func _gear(list: Array, tier: int) -> Dictionary:
 	return list[mini(tier, list.size() - 1)]
 
 func _watk() -> int:
-	return atk + int(_gear(Content.WEAPONS, weapon_tier)["atk"])
+	var base := atk + int(_gear(Content.WEAPONS, weapon_tier)["atk"])
+	if String(_gear(Content.WEAPONS, weapon_tier).get("effect", "")) == "vow" and hp <= max_hp / 2:
+		base += 5
+	return base
+
+func _weffect() -> String:
+	return String(_gear(Content.WEAPONS, weapon_tier).get("effect", ""))
 
 func _adef() -> int:
 	return int(_gear(Content.ARMORS, armor_tier)["def"])
@@ -1246,7 +1254,11 @@ func _start_fight(m: Dictionary, is_boss := false) -> void:
 	fight_is_boss = is_boss
 	enemy_hp = int(m["hp"])
 	guarding = false
+	combat_turns = 0
+	enemy_stunned = false
 	ward_blocked = false
+	if _weffect() == "stun" and randf() < 0.25:
+		enemy_stunned = true
 	_set_art(String(m["art"]))
 	_refresh_status()
 	var desc := String(m["desc"])
@@ -1302,16 +1314,23 @@ func _combat_text(t: String) -> void:
 
 func _combat_round(action: String) -> void:
 	var log := ""
+	combat_turns += 1
 	# player action
 	match action:
 		"c_strike":
 			var dmg := _watk() + randi_range(-1, 2)
+			if _weffect() == "first_blood" and combat_turns == 1:
+				dmg += 6
+				log += "The Choirwire sings! "
 			enemy_hp -= dmg
 			log += "You strike for %d. " % dmg
 			_sfx("hit")
 		"c_heavy":
 			if randf() < 0.65:
 				var dmg2 := int(_watk() * 1.7) + randi_range(0, 2)
+				if _weffect() == "heavy_crit" and randf() < 0.3:
+					dmg2 *= 2
+					log += "The Warden's Teeth find a throat — CRITICAL! "
 				enemy_hp -= dmg2
 				log += "Your heavy blow lands for %d! " % dmg2
 				_sfx("hit")
@@ -1333,6 +1352,10 @@ func _combat_round(action: String) -> void:
 		return
 	# enemy turn
 	var edmg := int(enemy["atk"]) + randi_range(-1, 2)
+	if enemy_stunned:
+		enemy_stunned = false
+		edmg = 0
+		log += "The Bellhammer's ring still echoes — the foe reels, stunned. "
 	if _charm() == "ward" and not ward_blocked:
 		ward_blocked = true
 		edmg = 0
@@ -1409,6 +1432,8 @@ func _win_fight(log: String) -> void:
 	_sfx("gold")
 	if _charm() == "leech":
 		hp = mini(max_hp, hp + 2)
+	if _weffect() == "heal_kill":
+		hp = mini(max_hp, hp + 3)
 	_refresh_status()
 	var final := fight_is_boss and floor_num == 9
 	var was_boss := fight_is_boss
@@ -1416,6 +1441,8 @@ func _win_fight(log: String) -> void:
 	mode = "room"
 	_set_art("corridor")
 	var tail := "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain]
+	if _weffect() == "heal_kill":
+		tail += "\nMira's Knife hums warm in your hand. (+3 HP)"
 	if randf() < 0.35:
 		tail += "\n\"%s\"" % String((Content.CORVIN_KILL as Array)[randi() % Content.CORVIN_KILL.size()])
 	tail += _whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""
