@@ -77,6 +77,8 @@ var hp_label: Label
 var floor_label: Label
 var gold_label: Label
 var scanlines: ColorRect
+var grain_rect: TextureRect
+var _grain_t := 0.0
 var _typewriter_t := 0.0
 var _typewriter_full := ""
 var _typewriter_done := true
@@ -103,6 +105,23 @@ func _build_ui() -> void:
 	art_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(art_rect)
+	# animated film grain overlay (keeps the noise he loves, always on)
+	grain_rect = TextureRect.new()
+	var noise := FastNoiseLite.new()
+	noise.seed = 1337
+	noise.frequency = 0.9
+	var ntex := NoiseTexture2D.new()
+	ntex.width = 256
+	ntex.height = 256
+	ntex.noise = noise
+	grain_rect.texture = ntex
+	grain_rect.position = Vector2(20, 20)
+	grain_rect.size = Vector2(680, 460)
+	grain_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	grain_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	grain_rect.modulate = Color(1, 1, 1, 0.10)
+	grain_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(grain_rect)
 	# big title overlay
 	title_label = Label.new()
 	title_label.text = "GLOAM"
@@ -298,6 +317,12 @@ func _finish_typewriter() -> void:
 		_show_choices()
 
 func _process(dt: float) -> void:
+	# animated film grain — jitter the noise so it shimmers like old film
+	if is_instance_valid(grain_rect):
+		_grain_t += dt
+		if _grain_t >= 0.12:
+			_grain_t = 0.0
+			grain_rect.position = Vector2(20 + randf_range(-6, 6), 20 + randf_range(-6, 6))
 	if mode == "title" and title_label.visible:
 		title_t += dt
 		var fl := 0.94 + 0.04 * sin(title_t * 6.0) + 0.02 * sin(title_t * 17.3)
