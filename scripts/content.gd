@@ -83,25 +83,25 @@ const CORVIN_LOW := [
 
 const MONSTERS := [
 	# tier 0 — floors 1-3
-	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "corridor",
+	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "beast",
 		"desc": "It was a person, once. Now it drags itself along the gutter-stones, begging with a mouth full of black teeth."},
-	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "trap",
+	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "beast",
 		"desc": "It moves wrong — joints bending the other way. It has been waiting in the dark a long, long time."},
-	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "shrine",
+	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "beast",
 		"desc": "It carries a cracked chapel bell and rings it as it comes. The sound makes your teeth ache."},
 	# tier 1 — floors 4-6
 	{"name": "Flayed Choir", "hp": 35, "atk": 7, "gold": [15, 24], "art": "deep4",
 		"desc": "Three voices, one body, no skin. It sings the hymn they sang upstairs, before the silence."},
-	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "escape",
+	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "beast",
 		"desc": "It smells the marrow in your bones. It is patient. It does not need to hurry."},
-	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "lost_soul",
+	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "beast",
 		"desc": "Armor rusted shut around something that still breathes. It weeps as it raises its sword. It cannot stop."},
 	# tier 2 — floors 7-9
 	{"name": "Gristle Titan", "hp": 54, "atk": 11, "gold": [25, 38], "art": "beast",
 		"desc": "The ceiling is too low for it, so it crawls. The stones crack under its knuckles."},
-	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "carving",
+	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "beast",
 		"desc": "It is coming apart and it wants you to hold it together. Its hands are so cold."},
-	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "death",
+	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "beast",
 		"desc": "It conducts with a spine for a baton. The song it is building needs one more voice. Yours."},
 	{"name": "The Unnamed", "hp": 70, "atk": 12, "gold": [32, 48], "art": "mon_unnamed",
 		"desc": "It has no face because it gave its name away, and something else is wearing it now. It wants yours too."},
