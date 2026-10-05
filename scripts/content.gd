@@ -83,25 +83,25 @@ const CORVIN_LOW := [
 
 const MONSTERS := [
 	# tier 0 — floors 1-3
-	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "beast",
+	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "corridor",
 		"desc": "It was a person, once. Now it drags itself along the gutter-stones, begging with a mouth full of black teeth."},
-	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "beast",
+	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "trap",
 		"desc": "It moves wrong — joints bending the other way. It has been waiting in the dark a long, long time."},
-	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "beast",
+	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "shrine",
 		"desc": "It carries a cracked chapel bell and rings it as it comes. The sound makes your teeth ache."},
 	# tier 1 — floors 4-6
-	{"name": "Flayed Choir", "hp": 35, "atk": 7, "gold": [15, 24], "art": "beast",
+	{"name": "Flayed Choir", "hp": 35, "atk": 7, "gold": [15, 24], "art": "deep4",
 		"desc": "Three voices, one body, no skin. It sings the hymn they sang upstairs, before the silence."},
-	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "beast",
+	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "escape",
 		"desc": "It smells the marrow in your bones. It is patient. It does not need to hurry."},
-	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "beast",
+	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "lost_soul",
 		"desc": "Armor rusted shut around something that still breathes. It weeps as it raises its sword. It cannot stop."},
 	# tier 2 — floors 7-9
 	{"name": "Gristle Titan", "hp": 54, "atk": 11, "gold": [25, 38], "art": "beast",
 		"desc": "The ceiling is too low for it, so it crawls. The stones crack under its knuckles."},
-	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "beast",
+	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "carving",
 		"desc": "It is coming apart and it wants you to hold it together. Its hands are so cold."},
-	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "beast",
+	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "death",
 		"desc": "It conducts with a spine for a baton. The song it is building needs one more voice. Yours."},
 	{"name": "The Unnamed", "hp": 70, "atk": 12, "gold": [32, 48], "art": "mon_unnamed",
 		"desc": "It has no face because it gave its name away, and something else is wearing it now. It wants yours too."},
@@ -119,21 +119,21 @@ const BOSSES := [
 const ROOMS := [
 	# --- treasure ---
 	{"art": "treasure", "kind": "treasure",
-		"text": "A chest, banded in iron, half-buried in dust. The lock is already broken — someone left in a hurry.",
+		"text": "A chest, banded in iron, half-buried in dust. The lock is already broken — someone left in a hurry. — someone was here before you, and they left in a hurry. Their bootprints lead away from the chest, not toward it. Whatever they found, it wasn't worth staying for.",
 		"sting": "The gold is cold. Everything down here is cold — except the things that are watching.",
 		"choices": [
 			{"label": "Take the gold", "do": "gold:22"},
 			{"label": "Leave it", "do": "nothing"},
 		]},
 	{"art": "corridor", "kind": "treasure",
-		"text": "A dead delver slumps against the wall, pack still on. His lantern went out a long time ago. His coin purse didn't.",
+		"text": "A dead delver slumps against the wall, pack still on. His lantern went out a long time ago. His coin purse didn't.g time ago. His journal's last page reads: 'Day 9. The whispering knows my name now. Going deeper anyway.' His sword is still sharp. He'd want you to take it.",
 		"sting": "You take his purse. You leave his name. The dark keeps the rest.",
 		"choices": [
 			{"label": "Search the pack", "do": "pack"},
 			{"label": "Say a prayer, move on", "do": "heal:4"},
 		]},
 	{"art": "corridor", "kind": "treasure",
-		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled.",
+		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled.ed, as if someone was just using it. But the dust on the floor is undisturbed — no footprints. Whatever maintains this place doesn't walk.",
 		"sting": "The whetstone sings against your blade. Somewhere, something answers.",
 		"choices": [
 			{"label": "Sharpen your blade (+1 ATK)", "do": "atk:1"},
@@ -141,14 +141,14 @@ const ROOMS := [
 		]},
 	# --- traps ---
 	{"art": "trap", "kind": "trap",
-		"text": "The floor clicks under your boot. Ahead, the tiles are wrong — too clean, too even.",
+		"text": "The floor clicks under your boot. Ahead, the tiles are wrong — too clean, too even. — too clean, too even, like teeth. Your war instincts count the seams. Pressure plates, probably. Or worse. Step light, knight.",
 		"sting": "You don't look down. Looking down is how it starts.",
 		"choices": [
 			{"label": "Rush across", "do": "dmg:6"},
 			{"label": "Pick your way through (slow, safe)", "do": "nothing"},
 		]},
 	{"art": "trap", "kind": "trap",
-		"text": "Green vapor curls from a cracked pipe. It smells sweet, like rot and honey.",
+		"text": "Green vapor curls from a cracked pipe. It smells sweet, like rot and honey. The same sweetness from the chapel stair. You wrap your scarf — Mira's blue scarf, the one you carry now — over your nose and mouth. Breathe shallow. Keep moving.",
 		"sting": "Sweet. Like rot and honey. Like the chapel incense, before.",
 		"choices": [
 			{"label": "Hold breath, push through", "do": "dmg:4"},
@@ -156,7 +156,7 @@ const ROOMS := [
 		]},
 	# --- shrine ---
 	{"art": "shrine", "kind": "shrine",
-		"text": "A shrine to something with too many names. The candles are still lit. Someone tends this place.",
+		"text": "A shrine to something with too many names. The candles are still lit. Someone tends this place.nds them. Down here. In the dark. You leave an offering anyway — a copper coin, a whispered name. Some doors you don't want closed behind you.",
 		"sting": "The candles lean toward you as you pass. Hungry, or hopeful. You can't tell.",
 		"choices": [
 			{"label": "Pray (heal 10)", "do": "heal:10"},
@@ -164,7 +164,7 @@ const ROOMS := [
 			{"label": "Leave", "do": "nothing"},
 		]},
 	{"art": "shrine", "kind": "shrine",
-		"text": "A fountain of black water. It doesn't reflect your face — it reflects a face you almost remember.",
+		"text": "A fountain of black water. It doesn't reflect your face — it reflects a face you almost remember. — it reflects a face you almost recognize. Younger. Unscarred. It mouths something at you: 'turn back.' You drink anyway. Knights don't turn back.",
 		"sting": "Your almost-face ripples. It looks happier than you.",
 		"choices": [
 			{"label": "Drink (heal 8)", "do": "heal:8"},
@@ -173,21 +173,21 @@ const ROOMS := [
 		]},
 	# --- events ---
 	{"art": "corridor", "kind": "event",
-		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out words.",
+		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out words.e out the words. Almost. That's the trap — the almost. You pull away before it finishes the sentence. Some things you don't want to understand.",
 		"sting": "The walls know your name now. They practice it when you leave.",
 		"choices": [
 			{"label": "Listen", "do": "whispers"},
 			{"label": "Keep walking", "do": "nothing"},
 		]},
 	{"art": "trap", "kind": "event",
-		"text": "A rusted cage hangs from the ceiling. Inside, a prisoner — alive, somehow. \"Free me,\" he rasps, \"and I'll make it worth your while.\"",
+		"text": "A rusted cage hangs from the ceiling. Inside, a prisoner — alive, somehow. \"Free me,\" he rasps, \"and I'll make it worth your while.\" — alive, somehow. 'Don't,' they croak. 'It's not locked to keep me in.' The cage door swings open at your touch. Empty. It was never about the cage.",
 		"sting": "The cage sways empty behind you. You don't turn around.",
 		"choices": [
 			{"label": "Break the lock", "do": "cage"},
 			{"label": "Leave him", "do": "nothing"},
 		]},
 	{"art": "shrine", "kind": "event",
-		"text": "A tall mirror, filmed with dust. Your reflection is already looking at you before you arrive.",
+		"text": "A tall mirror, filmed with dust. Your reflection is already looking at you before you arrive.e you look at it. It smiles with your mouth. You smash it with your pommel before it can speak. The shards whisper as they fall.",
 		"sting": "Your reflection stays a moment too long after you look away.",
 		"choices": [
 			{"label": "Gaze into it (+2 ATK, -6 HP)", "do": "mirror"},
@@ -195,7 +195,7 @@ const ROOMS := [
 			{"label": "Walk away", "do": "nothing"},
 		]},
 	{"art": "corridor", "kind": "event",
-		"text": "A shade in a gambler's coat shuffles bone dice. \"Double or nothing, delver. Feeling blessed?\"",
+		"text": "A shade in a gambler's coat shuffles bone dice. \"Double or nothing, delver. Feeling blessed?\" 'Play me,' it says. 'Winner takes a memory.' You think of Mira's laugh, and you keep your memories exactly where they are. Some games you walk away from.",
 		"sting": "The dice keep rolling after you leave. You can hear them. Don't go back.",
 		"choices": [
 			{"label": "Bet 15 gold", "do": "gamble:15"},

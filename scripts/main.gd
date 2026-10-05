@@ -476,7 +476,7 @@ func _show_title() -> void:
 		extra += "\nThe Keeper's favor: +1 potion each descent"
 	if souls_saved + souls_doomed > 0:
 		extra += "\nSouls guided: %d · Souls lost: %d" % [souls_saved, souls_doomed]
-	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra)
+	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra + "\n\nNo sound? Flip your silent switch off — the dark has a voice.")
 	_pending_choices = []
 	_choice("DESCEND", "start")
 	_choice("CODEX (%d/12)" % whispers_found.size(), "codex")
@@ -809,6 +809,7 @@ func _toggle_map() -> void:
 		return
 	map_panel.visible = not map_panel.visible
 	if map_panel.visible:
+		map_panel.move_to_front()
 		_update_map()
 
 func _update_map() -> void:
