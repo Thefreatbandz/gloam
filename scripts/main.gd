@@ -1292,6 +1292,10 @@ func _combat_round(action: String) -> void:
 	log += "%s hits you for %d." % [String(enemy["name"]), edmg]
 	if edmg > 0:
 		_sfx("hurt")
+		if hp <= max_hp * 0.3 and hp > 0 and randf() < 0.6:
+			log += "\n\"%s\"" % String((Content.CORVIN_LOW as Array)[randi() % Content.CORVIN_LOW.size()])
+		elif randf() < 0.25:
+			log += "\n\"%s\"" % String((Content.CORVIN_HURT as Array)[randi() % Content.CORVIN_HURT.size()])
 	if hp <= 0:
 		death_cause = "boss" if fight_is_boss else "combat"
 		_die()
@@ -1358,6 +1362,8 @@ func _win_fight(log: String) -> void:
 	mode = "room"
 	_set_art("corridor")
 	var tail := "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain]
+	if randf() < 0.35:
+		tail += "\n\"%s\"" % String((Content.CORVIN_KILL as Array)[randi() % Content.CORVIN_KILL.size()])
 	tail += _whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""
 	if was_boss and not final:
 		var drop := _boss_gear_drop()

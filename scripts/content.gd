@@ -3,12 +3,12 @@ extends RefCounted
 
 const INTRO := [
 	{"art": "title_hero", "text": "GLOAM.\n\nA horror rogue RPG.\n\nNine floors down. One way out.\n\nTap to begin your descent."},
-	{"art": "war", "text": "The Ashen War took seven years from you.\n\nSeven years of gray snow that wasn't snow. Of orders you still hear at night.\n\nYou told yourself: survive it, and go home. Just go home."},
-	{"art": "homecoming", "text": "You marched into Vesper with a limp and a medal you never wanted.\n\nNo one met you at the road. No smoke from any chimney.\n\nThe village was silent — had been, three nights now."},
-	{"art": "mira_room", "text": "Her room was exactly as she'd left it. Bed unslept. Carving knife on the pillow.\n\nHer blue scarf — gone from its hook.\n\nSix days gone. Six days, and no one in Vesper would say where."},
-	{"art": "intro1", "text": "Three nights ago, the bells of Vesper stopped ringing.\n\nNo screams. No smoke. Just silence — and then the whispering from below the chapel floor."},
-	{"art": "intro2", "text": "You pried up the chapel stones and found the stair going down.\n\nIt does not end. It only gets worse.\n\nYour lantern is lit. Your blade is sharp."},
-	{"art": "keeper", "text": "You are Corvin of Vesper. Soldier. Brother.\n\nMira went down six days ago, and she is still down there.\n\nGo find her."},
+	{"art": "war", "text": "The Ashen War took seven years from you.\n\nSeven years of gray snow that wasn't snow. Of mud that swallowed good men whole. Of orders you still hear at night, in a captain's voice, telling you to hold a line that no longer exists.\n\nYour armor — good Vesper steel, blessed by the chapel — came home dented, cracked, and dark with other men's blood. You stopped trying to clean it somewhere in year four. The stains had earned their place, same as you.\n\nYou told yourself, every winter: survive it, and go home. Just go home."},
+	{"art": "homecoming", "text": "You limped into Vesper at dusk with your shield on your back and a medal in your pocket you never wanted.\n\nNo one met you at the road. No smoke from any chimney. No dogs barking.\n\nThe village was silent — had been, three nights now. Your armored boots were the only sound on the dirt, and even that felt like trespassing.\n\nWar taught you what silence means. Silence means everyone already knows something you don't."},
+	{"art": "mira_room", "text": "Her room was exactly as she'd left it. Bed unslept. Carving knife on the pillow — the one you made her, the summer before you marched.\n\nHer blue scarf: gone from its hook.\n\nSix days gone. Six days, and no one in Vesper would meet your eyes when you asked where. Old Marta just crossed herself and shut her door. The blacksmith's boy whispered one word — 'chapel' — and ran.\n\nYou stood in that little empty room in your broken armor, and you understood: your sister went down into the dark alone, and the whole village let her."},
+	{"art": "intro1", "text": "Three nights ago, the bells of Vesper stopped ringing.\n\nNo screams. No smoke. Just silence — and then the whispering from below the chapel floor. The priest is gone. The pews are overturned. And under the altar stones, behind the place where the bells' ropes hang slack and still, there is a stair.\n\nIt was not built by any mason of Vesper. The stones are older than the village. Older, the old ones say, than the war. Older than the kingdom.\n\nSix days ago, a twelve-year-old girl with a blue scarf pried those stones up with her little knife and climbed down alone.\n\nShe never came up."},
+	{"art": "intro2", "text": "You pried up the chapel stones with gauntleted hands that have held a shield wall for seven years.\n\nThe stair goes down beyond your lantern light. Cold air breathes up out of it — old air, tasting of stone and deep water and something sweet underneath, like rot, like honey.\n\nYou checked your armor by feel: breastplate cracked at the left shoulder, vambrace dented, sword — your war sword, notched and true — at your hip. Not enough. Never enough. But it's what you have.\n\nYour lantern is lit. Your blade is sharp."},
+	{"art": "vow", "text": "You are Corvin of Vesper. Knight. Brother.\n\nYou knelt in the chapel dirt and made a vow to whatever still listens: you will walk down into that dark, and you will not come up without her.\n\nNot for glory. Not for the village that let her go.\n\nFor Mira.\n\nGo find her."},
 ]
 
 const WEAPONS := [
@@ -58,43 +58,61 @@ const MIRA_TRACES := {
 }
 
 const BARKS := [
-	["Fresh meat walks in.", "The dark sent you? How kind.", "Another lantern. Another moth."],
-	["Your bones will sing with us.", "We remember being you.", "Kneel now. Save us the trouble."],
-	["IT WEARS YOUR SHAPE ALREADY.", "The deep is hungry, little lantern.", "Come. Be unmade."],
+	["Fresh meat walks in.", "The dark sent you? How kind.", "Another lantern. Another moth.",
+	 "Come closer. We don't bite much.", "Your heart is so loud, little knight."],
+	["Your bones will sing with us.", "We remember being you.", "Kneel now. Save us the trouble.",
+	 "The war made you hard. We'll make you soft.", "That armor won't save you. Nothing down here saves."],
+	["IT WEARS YOUR SHAPE ALREADY.", "The deep is hungry, little lantern.", "Come. Be unmade.",
+	 "WE TASTED YOUR SISTER'S COURAGE. IT WAS SWEET.", "Kneel, knight. The dark outranks you."],
+]
+
+const CORVIN_KILL := [
+	"For Mira.", "Stay down.", "Seven years of war. You were nothing.",
+	"That's one.", "For Vesper.", "The dark takes. I take back.",
+]
+
+const CORVIN_HURT := [
+	"Ghh — not yet. Not yet.", "I've had worse. Had worse...", "Mira — hold on —",
+	"Armor held. Barely.", "You hit like the Ashen War. I've survived that.",
+]
+
+const CORVIN_LOW := [
+	"Not here. Not like this.", "I promised her. I PROMISED.",
+	"One more. Just one more room.", "If I fall, she stays down here forever.",
 ]
 
 const MONSTERS := [
 	# tier 0 — floors 1-3
-	{"name": "Gutter Wretch", "hp": 14, "atk": 4, "gold": [8, 14], "art": "beast",
+	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "beast",
 		"desc": "It was a person, once. Now it drags itself along the gutter-stones, begging with a mouth full of black teeth."},
-	{"name": "Pale Crawler", "hp": 12, "atk": 5, "gold": [8, 14], "art": "beast",
+	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "beast",
 		"desc": "It moves wrong — joints bending the other way. It has been waiting in the dark a long, long time."},
-	{"name": "Bell Ringer", "hp": 16, "atk": 3, "gold": [10, 16], "art": "beast",
+	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "beast",
 		"desc": "It carries a cracked chapel bell and rings it as it comes. The sound makes your teeth ache."},
 	# tier 1 — floors 4-6
-	{"name": "Flayed Choir", "hp": 26, "atk": 6, "gold": [15, 24], "art": "beast",
+	{"name": "Flayed Choir", "hp": 35, "atk": 7, "gold": [15, 24], "art": "beast",
 		"desc": "Three voices, one body, no skin. It sings the hymn they sang upstairs, before the silence."},
-	{"name": "Marrow Hound", "hp": 24, "atk": 7, "gold": [15, 24], "art": "beast",
+	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "beast",
 		"desc": "It smells the marrow in your bones. It is patient. It does not need to hurry."},
-	{"name": "Weeping Knight", "hp": 30, "atk": 5, "gold": [18, 28], "art": "beast",
+	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "beast",
 		"desc": "Armor rusted shut around something that still breathes. It weeps as it raises its sword. It cannot stop."},
 	# tier 2 — floors 7-9
-	{"name": "Gristle Titan", "hp": 40, "atk": 9, "gold": [25, 38], "art": "beast",
+	{"name": "Gristle Titan", "hp": 54, "atk": 11, "gold": [25, 38], "art": "beast",
 		"desc": "The ceiling is too low for it, so it crawls. The stones crack under its knuckles."},
-	{"name": "The Unraveled", "hp": 36, "atk": 10, "gold": [25, 38], "art": "beast",
+	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "beast",
 		"desc": "It is coming apart and it wants you to hold it together. Its hands are so cold."},
-	{"name": "Choir Master", "hp": 44, "atk": 8, "gold": [28, 42], "art": "beast",
+	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "beast",
 		"desc": "It conducts with a spine for a baton. The song it is building needs one more voice. Yours."},
-	{"name": "The Unnamed", "hp": 52, "atk": 10, "gold": [32, 48], "art": "mon_unnamed",
+	{"name": "The Unnamed", "hp": 70, "atk": 12, "gold": [32, 48], "art": "mon_unnamed",
 		"desc": "It has no face because it gave its name away, and something else is wearing it now. It wants yours too."},
 ]
 
 const BOSSES := [
-	{"name": "WARDEN OF TEETH", "hp": 65, "atk": 8, "gold": 60, "art": "boss",
+	{"name": "WARDEN OF TEETH", "hp": 81, "atk": 9, "gold": 60, "art": "boss",
 		"text": "The stair ends at a door made of teeth. It opens like a mouth.\n\nThe Warden unfolds from the dark — tall as the room, grinning with a hundred borrowed smiles.\n\n\"ANOTHER ONE,\" it says, with everyone's voice at once. \"COME. BE COUNTED.\""},
-	{"name": "THE STARVED SAINT", "hp": 95, "atk": 11, "gold": 100, "art": "boss",
+	{"name": "THE STARVED SAINT", "hp": 119, "atk": 13, "gold": 100, "art": "boss",
 		"text": "The chapel below the chapel. Candles that burn black.\n\nThe Saint hangs above the altar, thin as a prayer, eyes like embers.\n\n\"I fasted,\" she whispers, \"so that I would never hunger again. Look how well it worked.\""},
-	{"name": "GLOAM ITSELF", "hp": 135, "atk": 14, "gold": 200, "art": "boss",
+	{"name": "GLOAM ITSELF", "hp": 169, "atk": 16, "gold": 200, "art": "boss",
 		"text": "There is no floor nine. There is only the dark, and the dark has a face now.\n\nIt wears the village. It wears the chapel. It is wearing your shape, poorly.\n\n\"STAY,\" it says, in your voice. \"IT'S WARM DOWN HERE.\""},
 ]
 
@@ -238,15 +256,15 @@ const BOSS_CUTSCENES := [
 ]
 
 const TIER_CUTSCENES := {
-	1: [{"art": "floor1", "text": "FLOOR ONE — THE THROAT\n\nThe stair lets you out into a tunnel that breathes. In. Out. In. Out.\n\nDon't think about it."}],
-	2: [{"art": "floor2", "text": "FLOOR TWO — THE GULLET\n\nWater drips from somewhere overhead. The dark down here is thicker — it sticks to your lantern light and won't let go."}],
-	3: [{"art": "floor3", "text": "FLOOR THREE — THE WARDEN'S DOOR\n\nTeeth in the walls now. The humming is louder. Something big waits at the end of this floor — you can feel it in your molars."}],
-	4: [{"art": "deep4", "text": "FLOOR FOUR — THE HOLLOW CHOIR\n\nThe singing starts here. Not voices — the stones themselves, humming the hymn from the chapel upstairs.\n\nYour lantern burns lower, as if afraid."}],
-	5: [{"art": "floor5", "text": "FLOOR FIVE — THE DROWNED CHAPEL\n\nYour boots splash. The chapel down here drowned a long time ago.\n\nBut the candles never went out."}],
-	6: [{"art": "floor6", "text": "FLOOR SIX — THE SAINT'S DOOR\n\nStatues line the way, all weeping, all facing away.\n\nAt the end of this floor, she hangs and waits."}],
-	7: [{"art": "trap", "text": "FLOOR SEVEN — THE MARROW DEEP\n\nThe dark stops pretending to be stone. Everything down here is sharp, or hungry, or both.\n\nThe whispering knows your name now."}],
-	8: [{"art": "corridor", "text": "FLOOR EIGHT — THE UNRAVELING\n\nThe walls are bone now, fused and yellowed. The whispering is clear enough to understand.\n\nYou wish it wasn't."}],
-	9: [{"art": "floor9", "text": "FLOOR NINE — ITSELF\n\nThere are no more stairs after this. No more doors.\n\nWhatever the Gloam is, it's done hiding. End it."}],
+	1: [{"art": "floor1", "text": "FLOOR ONE — THE THROAT\n\nThe stair lets you out into a tunnel that breathes. In. Out. In. Out.\n\nDon't think about it."}, {"art": "floor1", "text": "Your armor scrapes the narrowing walls. The Throat swallows lanterns whole — yours gutters, then burns on, defiant."}],
+	2: [{"art": "floor2", "text": "FLOOR TWO — THE GULLET\n\nWater drips from somewhere overhead. The dark down here is thicker — it sticks to your lantern light and won't let go."}, {"art": "floor2", "text": "Something small scuttles just beyond the light. You raise your sword. Nothing there. The Gullet likes its jokes."}],
+	3: [{"art": "floor3", "text": "FLOOR THREE — THE WARDEN'S DOOR\n\nTeeth in the walls now. The humming is louder. Something big waits at the end of this floor — you can feel it in your molars."}, {"art": "floor3", "text": "Your war instincts scream: choke point ahead. You check your dented shield twice. Whatever the Warden is, it bleeds."}],
+	4: [{"art": "deep4", "text": "FLOOR FOUR — THE HOLLOW CHOIR\n\nThe singing starts here. Not voices — the stones themselves, humming the hymn from the chapel upstairs.\n\nYour lantern burns lower, as if afraid."}, {"art": "deep4", "text": "The hymn gets under your armor, under your skin. You hum along before you catch yourself — and stop, cold."}],
+	5: [{"art": "floor5", "text": "FLOOR FIVE — THE DROWNED CHAPEL\n\nYour boots splash. The chapel down here drowned a long time ago.\n\nBut the candles never went out."}, {"art": "floor5", "text": "A drowned pew floats past, slow as a coffin. You think of Mira's little knife, and grip your sword tighter."}],
+	6: [{"art": "floor6", "text": "FLOOR SIX — THE SAINT'S DOOR\n\nStatues line the way, all weeping, all facing away.\n\nAt the end of this floor, she hangs and waits."}, {"art": "floor6", "text": "One statue's face is yours. You don't look twice. Knights learn when not to look."}],
+	7: [{"art": "trap", "text": "FLOOR SEVEN — THE MARROW DEEP\n\nThe dark stops pretending to be stone. Everything down here is sharp, or hungry, or both.\n\nThe whispering knows your name now."}, {"art": "trap", "text": "Your lantern light bends here, wrong. The Marrow Deep doesn't want to be seen clearly. You see it anyway."}],
+	8: [{"art": "corridor", "text": "FLOOR EIGHT — THE UNRAVELING\n\nThe walls are bone now, fused and yellowed. The whispering is clear enough to understand.\n\nYou wish it wasn't."}, {"art": "corridor", "text": "The bone walls pulse, faintly, like a heart. You put your gauntleted hand to them. Still warm. Still wrong."}],
+	9: [{"art": "floor9", "text": "FLOOR NINE — ITSELF\n\nThere are no more stairs after this. No more doors.\n\nWhatever the Gloam is, it's done hiding. End it."}, {"art": "floor9", "text": "No more stairs. No more doors. Just you, your broken armor, and ITSELF. For Mira. End it."}],
 }
 
 # the Keeper appears on floors 2, 5, 8: {"art","text","gift"} gift applied on visit
