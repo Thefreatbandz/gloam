@@ -161,3 +161,33 @@ const KEEPER_BEATS := {
 }
 const DEATH_TEXT := "The dark takes you the way it takes everyone — gently, then all at once.\n\nYour lantern gutters out. Somewhere above, a bell rings once, and stops."
 const WIN_TEXT := "It lets go.\n\nYou climb with the last of your strength, up through the teeth-door, up through the chapels, up into grey morning light.\n\nVesper is still silent. But the whispering has stopped.\n\nYou walk out of the village and do not look back."
+
+# endings: %d = gold, %s = boss name
+const END_DAYBREAK := [
+	{"art": "escape", "text": "It lets go.\n\nYou climb with the last of your strength — up through the teeth-door, up through the chapels, up into grey morning light."},
+	{"art": "intro1", "text": "Vesper is still silent. But the whispering has stopped.\n\nYou walk out of the village and do not look back."},
+	{"art": "title", "text": "DAYBREAK — escaped.\n\nGold carried out: %d\n\nThe dark will wait for the next delver."},
+]
+const END_STAY := [
+	{"art": "boss", "text": "You kneel.\n\nThe dark rushes forward — not unkindly. It has been so lonely, wearing all those faces."},
+	{"art": "death", "text": "The teeth-door closes behind you.\n\nAbove, the bells of Vesper ring once — and then never again.\n\nSTAY — you are home now."},
+]
+const END_LANTERN := [
+	{"art": "keeper", "text": "The blue lantern flares. The Keeper steps out of the dark between heartbeats.\n\n\"You kept moving,\" it says. \"Few do. Come — there is another way up.\""},
+	{"art": "escape", "text": "It takes your hand — cold, steady — and walks you up through a dark you never saw. No teeth. No singing.\n\nJust the blue light, going up."},
+	{"art": "title", "text": "THE BLUE LANTERN — escaped.\n\nYour pockets are empty. Your lantern burns blue now.\n\nThe gold stayed below. So did the whispering."},
+]
+const END_GILDED := [
+	{"art": "escape", "text": "It lets go — or it lets you think it did.\n\nYou climb out heavy with gold, %d coins that whisper when the room is quiet."},
+	{"art": "intro1", "text": "Vesper is still silent. At night, your gold sings the hymn from downstairs.\n\nYou tell yourself it's just the wind."},
+	{"art": "title", "text": "GILDED — escaped, rich, and never quite warm again.\n\nGold carried out: %d"},
+]
+const END_CLAIMED := [
+	{"art": "boss", "text": "%s does not let go.\n\nIt keeps what it catches."},
+	{"art": "death", "text": "The dark takes you the way it takes everyone — gently, then all at once.\n\nCLAIMED — the %s wears your face now."},
+]
+const END_TAKEN := [
+	{"art": "death", "text": "The dark takes you the way it takes everyone — gently, then all at once.\n\nYour lantern gutters out. Somewhere above, a bell rings once, and stops.\n\nYou reached floor %d."},
+	{"art": "title", "text": "Somewhere above, another lantern is lit.\n\nAnother delver lifts the chapel stones.\n\nTAKEN — the dark is patient."},
+]
+const GLOAM_OFFER := "The dark coils around you, almost gentle.\n\n\"KNEEL,\" it says, in your voice, \"AND STAY. IT'S WARM DOWN HERE.\"\n\nYour blade is in your hand. Your knees are already bending."

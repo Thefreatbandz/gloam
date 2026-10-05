@@ -24,6 +24,9 @@ var enemy := {}
 var enemy_hp := 0
 var guarding := false
 var best_depth := 0
+var keeper_met := 0
+var fight_is_boss := false
+var endings_found: Array = []
 
 # ui
 var art_rect: TextureRect
@@ -249,7 +252,12 @@ func _show_title() -> void:
 	mode = "title"
 	_set_art("title")
 	_refresh_status()
-	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + ("\n\nBest depth: floor %d" % best_depth if best_depth > 0 else ""))
+	var extra := ""
+	if best_depth > 0:
+		extra += "\n\nBest depth: floor %d" % best_depth
+	if not endings_found.is_empty():
+		extra += "\nEndings found: %d/6" % endings_found.size()
+	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra)
 	_pending_choices = []
 	_choice("DESCEND", "start")
 
@@ -261,6 +269,9 @@ func _start_run() -> void:
 	potions = 2
 	floor_num = 1
 	intro_idx = 0
+	keeper_met = 0
+	fight_is_boss = false
+	guarding = false
 	_show_intro()
 
 func _show_intro() -> void:
@@ -346,6 +357,7 @@ func _next_room() -> void:
 				_choice(String(cd["label"]), String(cd["do"]))
 
 func _visit_keeper() -> void:
+	keeper_met += 1
 	var kb: Dictionary = Content.KEEPER_BEATS[floor_num]
 	for g in String(kb["gift"]).split("+"):
 		var p := g.split(":")
@@ -383,8 +395,12 @@ func _do(do: String) -> void:
 			_show_intro()
 		"stairs_go":
 			_next_room()
-		"boss_go":
-			_start_fight(Content.BOSSES[int(parts[1])])
+		"gloam_fight":
+			_start_fight(Content.BOSSES[2], true)
+		"gloam_kneel":
+			_ending_stay()
+		"win_go":
+			_win()
 		"cs_next":
 			_advance_cutscene()
 		"pack":
@@ -478,9 +494,10 @@ func _hurt(n: int, msg: String, cont := true) -> void:
 		_choice("Continue", "nothing")
 
 # ---------------- combat ----------------
-func _start_fight(m: Dictionary) -> void:
+func _start_fight(m: Dictionary, is_boss := false) -> void:
 	mode = "combat"
 	enemy = m
+	fight_is_boss = is_boss
 	enemy_hp = int(m["hp"])
 	guarding = false
 	_set_art(String(m["art"]))
@@ -488,7 +505,24 @@ func _start_fight(m: Dictionary) -> void:
 	_combat_text(String(m["desc"]) + "\n\nA %s blocks your path!" % String(m["name"]))
 
 func _start_boss(idx: int) -> void:
-	_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _start_fight(Content.BOSSES[idx]))
+	var b: Dictionary = Content.BOSSES[idx]
+	if idx == 2:
+		_play_cutscene(Content.BOSS_CUTSCENES[idx], _gloam_choice)
+	else:
+		_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _start_fight(b, true))
+
+func _gloam_choice() -> void:
+	mode = "room"
+	_set_art("boss")
+	_refresh_status()
+	_say(Content.GLOAM_OFFER)
+	_pending_choices = []
+	_choice("Fight it", "gloam_fight")
+	_choice("Kneel", "gloam_kneel")
+
+func _ending_stay() -> void:
+	_unlock_ending("stay")
+	_play_cutscene(Content.END_STAY, _end_choices)
 
 func _combat_text(t: String) -> void:
 	_say(t + "\n\n%s — HP %d/%d" % [String(enemy["name"]), enemy_hp, int(enemy["hp"])])
@@ -549,25 +583,56 @@ func _win_fight(log: String) -> void:
 		gain = int(enemy["gold"])
 	gold += gain
 	_refresh_status()
+	var final := fight_is_boss and floor_num == 9
+	fight_is_boss = false
 	mode = "room"
 	_set_art("corridor")
 	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain])
 	_pending_choices = []
-	_choice("Continue", "nothing")
+	_choice("Continue", "win_go" if final else "nothing")
 
 func _die() -> void:
-	mode = "dead"
 	if floor_num > best_depth:
 		best_depth = floor_num
 		_save_best()
 	_refresh_status()
-	var panels := [
-		{"art": "death", "text": Content.DEATH_TEXT + "\n\nYou reached floor %d." % floor_num},
-		{"art": "title", "text": "Somewhere above, another lantern is lit.\n\nAnother delver lifts the chapel stones.\n\nThe dark is patient."},
-	]
-	_play_cutscene(panels, _die_choices)
+	if fight_is_boss:
+		_unlock_ending("claimed")
+		var bn := String(enemy["name"])
+		var panels := []
+		for p in Content.END_CLAIMED:
+			var pd: Dictionary = p
+			panels.append({"art": String(pd["art"]), "text": String(pd["text"]) % bn})
+		_play_cutscene(panels, _end_choices)
+	else:
+		_unlock_ending("taken")
+		var panels2 := [{"art": "death", "text": Content.END_TAKEN[0]["text"] % floor_num}, Content.END_TAKEN[1]]
+		_play_cutscene(panels2, _end_choices)
+	fight_is_boss = false
 
-func _die_choices() -> void:
+func _win() -> void:
+	best_depth = 9
+	_refresh_status()
+	var panels: Array
+	if keeper_met >= 3:
+		_unlock_ending("lantern")
+		panels = Content.END_LANTERN.duplicate()
+	elif gold >= 250:
+		_unlock_ending("gilded")
+		panels = []
+		for p in Content.END_GILDED:
+			var pd: Dictionary = p
+			panels.append({"art": String(pd["art"]), "text": String(pd["text"]) % gold})
+	else:
+		_unlock_ending("daybreak")
+		panels = []
+		for p in Content.END_DAYBREAK:
+			var pd2: Dictionary = p
+			var t := String(pd2["text"])
+			panels.append({"art": String(pd2["art"]), "text": t % gold if "%d" in t else t})
+	_play_cutscene(panels, _end_choices)
+
+func _end_choices() -> void:
 	mode = "dead"
 	_clear_choices()
 	_pending_choices = []
@@ -575,25 +640,10 @@ func _die_choices() -> void:
 	_choice("Title", "title")
 	_show_choices()
 
-func _win() -> void:
-	mode = "win"
-	best_depth = 9
-	_save_best()
-	_refresh_status()
-	var panels := [
-		{"art": "escape", "text": "It lets go.\n\nYou climb with the last of your strength — up through the teeth-door, up through the chapels, up into grey morning light."},
-		{"art": "intro1", "text": "Vesper is still silent. But the whispering has stopped.\n\nYou walk out of the village and do not look back."},
-		{"art": "title", "text": "GLOAM — escaped.\n\nGold carried out: %d\n\nThe dark will wait for the next delver." % gold},
-	]
-	_play_cutscene(panels, _win_choices)
-
-func _win_choices() -> void:
-	mode = "win"
-	_clear_choices()
-	_pending_choices = []
-	_choice("Descend again", "start")
-	_choice("Title", "title")
-	_show_choices()
+func _unlock_ending(id: String) -> void:
+	if not id in endings_found:
+		endings_found.append(id)
+		_save_best()
 
 # ---------------- save ----------------
 const SAVE_PATH := "user://gloam.save"
@@ -601,7 +651,7 @@ const SAVE_PATH := "user://gloam.save"
 func _save_best() -> void:
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
-		f.store_var({"best": best_depth})
+		f.store_var({"best": best_depth, "endings": endings_found})
 		f.close()
 
 func _load_best() -> void:
@@ -611,4 +661,5 @@ func _load_best() -> void:
 	if f:
 		var d: Dictionary = f.get_var()
 		best_depth = int(d.get("best", 0))
+		endings_found = d.get("endings", [])
 		f.close()
