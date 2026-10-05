@@ -145,7 +145,7 @@ const ROOMS := [
 			{"label": "Search the pack", "do": "pack"},
 			{"label": "Say a prayer, move on", "do": "heal:4"},
 		]},
-	{"art": "corridor", "kind": "treasure",
+	{"art": "room_armory", "kind": "treasure",
 		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled.ed, as if someone was just using it. But the dust on the floor is undisturbed — no footprints. Whatever maintains this place doesn't walk.",
 		"sting": "The whetstone sings against your blade. Somewhere, something answers.",
 		"choices": [
@@ -185,7 +185,7 @@ const ROOMS := [
 			{"label": "Leave", "do": "nothing"},
 		]},
 	# --- events ---
-	{"art": "corridor", "kind": "event",
+	{"art": "room_whisper", "kind": "event",
 		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out words.e out the words. Almost. That's the trap — the almost. You pull away before it finishes the sentence. Some things you don't want to understand.",
 		"sting": "The walls know your name now. They practice it when you leave.",
 		"choices": [
@@ -207,7 +207,7 @@ const ROOMS := [
 			{"label": "Smash it", "do": "gold:10"},
 			{"label": "Walk away", "do": "nothing"},
 		]},
-	{"art": "corridor", "kind": "event",
+	{"art": "room_gambler", "kind": "event",
 		"text": "A shade in a gambler's coat shuffles bone dice. \"Double or nothing, delver. Feeling blessed?\" 'Play me,' it says. 'Winner takes a memory.' You think of Mira's laugh, and you keep your memories exactly where they are. Some games you walk away from.",
 		"sting": "The dice keep rolling after you leave. You can hear them. Don't go back.",
 		"choices": [
