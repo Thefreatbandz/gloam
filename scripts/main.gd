@@ -18,7 +18,7 @@ var atk := 6
 var gold := 0
 var potions := 2
 var floor_num := 1
-var room_queue := []
+const DungeonMap = preload("res://scripts/dungeon_map.gd")
 var intro_idx := 0
 var enemy := {}
 var enemy_hp := 0
@@ -28,6 +28,11 @@ var keeper_met := 0
 var fight_is_boss := false
 var endings_found: Array = []
 var whispers_found: Array = []
+var dungeon: Array = []
+var cur_node := 0
+var _after_fight := ""
+
+const EXIT_DESCS := ["a low archway", "a corridor that smells of rot", "a passage glimmering faintly", "a stairwell breathing cold air", "a crack in the wall", "a doorway choked with cobwebs", "a tunnel that hums", "a dark opening", "a sloping passage", "a narrow fissure"]
 
 # ui
 var art_rect: TextureRect
@@ -42,6 +47,8 @@ var _typewriter_t := 0.0
 var _typewriter_full := ""
 var _typewriter_done := true
 var _pending_choices := []
+var map_panel: PanelContainer
+var map_view: Control
 
 func _ready() -> void:
 	_load_best()
@@ -82,9 +89,64 @@ func _build_ui() -> void:
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(frame)
 	# status row
-	floor_label = _mk_label("", 24, Vector2(20, 494), Vector2(340, 36), DIM)
-	gold_label = _mk_label("", 24, Vector2(360, 494), Vector2(340, 36), GOLD_C)
+	floor_label = _mk_label("", 24, Vector2(20, 494), Vector2(400, 36), DIM)
+	gold_label = _mk_label("", 24, Vector2(550, 494), Vector2(150, 36), GOLD_C)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# map button
+	var map_btn := Button.new()
+	map_btn.text = "MAP"
+	map_btn.position = Vector2(430, 486)
+	map_btn.custom_minimum_size = Vector2(110, 44)
+	map_btn.add_theme_font_size_override("font_size", 22)
+	map_btn.add_theme_color_override("font_color", INK)
+	var mbs := StyleBoxFlat.new()
+	mbs.bg_color = Color(0.09, 0.07, 0.08, 0.98)
+	mbs.border_color = Color(0.45, 0.10, 0.10, 0.9)
+	mbs.set_border_width_all(2)
+	mbs.set_corner_radius_all(8)
+	map_btn.add_theme_stylebox_override("normal", mbs)
+	map_btn.add_theme_stylebox_override("hover", mbs)
+	map_btn.add_theme_stylebox_override("pressed", mbs)
+	map_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	map_btn.pressed.connect(_toggle_map)
+	add_child(map_btn)
+	# map overlay
+	map_panel = PanelContainer.new()
+	map_panel.position = Vector2(40, 220)
+	map_panel.custom_minimum_size = Vector2(640, 740)
+	map_panel.size = Vector2(640, 740)
+	var mpbs := StyleBoxFlat.new()
+	mpbs.bg_color = Color(0.03, 0.03, 0.04, 0.97)
+	mpbs.border_color = Color(0.5, 0.12, 0.12, 0.95)
+	mpbs.set_border_width_all(3)
+	mpbs.set_corner_radius_all(12)
+	map_panel.add_theme_stylebox_override("panel", mpbs)
+	var mvb := VBoxContainer.new()
+	mvb.add_theme_constant_override("separation", 8)
+	map_panel.add_child(mvb)
+	var mtitle := Label.new()
+	mtitle.text = "THE DARK, MAPPED"
+	mtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mtitle.add_theme_font_size_override("font_size", 24)
+	mtitle.add_theme_color_override("font_color", DIM)
+	mvb.add_child(mtitle)
+	map_view = DungeonMap.new()
+	map_view.custom_minimum_size = Vector2(600, 580)
+	map_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mvb.add_child(map_view)
+	var mclose := Button.new()
+	mclose.text = "Close"
+	mclose.custom_minimum_size = Vector2(600, 64)
+	mclose.add_theme_font_size_override("font_size", 24)
+	mclose.add_theme_color_override("font_color", INK)
+	mclose.add_theme_stylebox_override("normal", mbs)
+	mclose.add_theme_stylebox_override("hover", mbs)
+	mclose.add_theme_stylebox_override("pressed", mbs)
+	mclose.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	mclose.pressed.connect(_toggle_map)
+	mvb.add_child(mclose)
+	map_panel.visible = false
+	add_child(map_panel)
 	# hp bar
 	hp_bar = ProgressBar.new()
 	hp_bar.position = Vector2(20, 534)
@@ -337,6 +399,7 @@ func _start_run() -> void:
 	keeper_met = 0
 	fight_is_boss = false
 	guarding = false
+	_after_fight = ""
 	_show_intro()
 
 func _show_intro() -> void:
@@ -351,56 +414,155 @@ func _show_intro() -> void:
 	_choice("Continue", "intro_next")
 	intro_idx += 1
 
-func _begin_floor() -> void:
+func _begin_floor(random_start := false) -> void:
 	mode = "room"
-	room_queue = _gen_floor(floor_num)
-	_next_room()
+	_gen_dungeon(floor_num)
+	cur_node = randi() % dungeon.size() if random_start else 0
+	_update_map()
+	_enter_node(cur_node)
 
-func _gen_floor(f: int) -> Array:
-	var rooms := []
+func _link(a: int, b: int) -> void:
+	var na: Dictionary = dungeon[a]
+	var nb: Dictionary = dungeon[b]
+	if b in na["conns"]:
+		return
+	(na["conns"] as Array).append(b)
+	(nb["conns"] as Array).append(a)
+
+func _bfs_depths() -> Array:
+	var depth := []
+	depth.resize(dungeon.size())
+	depth.fill(-1)
+	depth[0] = 0
+	var q := [0]
+	while not q.is_empty():
+		var n: int = q.pop_front()
+		for c in (dungeon[n] as Dictionary)["conns"]:
+			if depth[int(c)] == -1:
+				depth[int(c)] = depth[n] + 1
+				q.append(int(c))
+	return depth
+
+func _nodes_of_kind(kinds: Array) -> Array:
+	var out := []
+	for i in dungeon.size():
+		var nd: Dictionary = dungeon[i]
+		if String(nd["kind"]) in kinds and i != 0:
+			out.append(i)
+	return out
+
+func _gen_dungeon(f: int) -> void:
+	dungeon = []
+	var count := 8 + mini(3, f / 3)
+	for i in count:
+		dungeon.append({"id": i, "kind": "empty", "conns": [], "visited": false, "data": {}, "descs": {}, "special": ""})
+	for i in range(1, count):
+		_link(i, randi() % i)
+	for k in range(count / 3):
+		_link(randi() % count, randi() % count)
+	var depth := _bfs_depths()
+	var order := []
+	for i in count:
+		order.append(i)
+	order.sort_custom(func(a, b): return depth[a] > depth[b])
+	var is_boss_floor := f % 3 == 0
+	var boss_id := -1
+	var stairs_id := -1
+	if is_boss_floor:
+		boss_id = order[0]
+		(dungeon[boss_id] as Dictionary)["kind"] = "boss"
+		(dungeon[boss_id] as Dictionary)["special"] = "boss"
+	else:
+		stairs_id = order[0]
+		(dungeon[stairs_id] as Dictionary)["kind"] = "stairs"
+		(dungeon[stairs_id] as Dictionary)["special"] = "stairs"
+	(dungeon[0] as Dictionary)["kind"] = "fight"
+	(dungeon[0] as Dictionary)["data"] = {"monster": "pick"}
+	var kinds := ["fight", "fight", "fight", "treasure", "treasure", "trap", "shrine", "event", "event"]
 	if Content.KEEPER_BEATS.has(f):
-		rooms.append({"kind": "keeper"})
+		kinds.append("keeper")
+	while kinds.size() < count - 3:
+		kinds.append("fight" if randf() < 0.5 else "event")
+	kinds.shuffle()
 	var pool: Array = Content.ROOMS.duplicate()
 	pool.shuffle()
-	# 1 combat guaranteed, then 3 mixed, then stairs
-	rooms.append({"kind": "fight"})
-	var added := 0
-	for r in pool:
-		var rd: Dictionary = r
-		if String(rd["kind"]) == "fight":
+	var by_kind := {}
+	for rd in pool:
+		var kk := String((rd as Dictionary)["kind"])
+		if not by_kind.has(kk):
+			by_kind[kk] = []
+		(by_kind[kk] as Array).append(rd)
+	var ki := 0
+	for i in count:
+		if i == 0 or i == stairs_id or i == boss_id:
 			continue
-		rooms.append(rd)
-		added += 1
-		if added >= 3:
-			break
-	# boss floors: boss replaces last room before stairs
-	if f % 3 == 0:
-		rooms.append({"kind": "boss"})
-	rooms.append({"kind": "stairs"})
-	return rooms
+		var nd: Dictionary = dungeon[i]
+		if ki >= kinds.size():
+			nd["kind"] = "fight"
+			nd["data"] = {"monster": "pick"}
+			continue
+		var kind := String(kinds[ki])
+		ki += 1
+		nd["kind"] = kind
+		if kind == "fight":
+			nd["data"] = {"monster": "pick"}
+		elif kind == "keeper":
+			nd["data"] = {}
+		elif kind in ["treasure", "trap", "shrine", "event"]:
+			var lst: Array = by_kind.get(kind, [])
+			if lst.is_empty():
+				nd["kind"] = "fight"
+				nd["data"] = {"monster": "pick"}
+			else:
+				nd["data"] = lst.pop_back()
+	if f < 9 and randf() < 0.5:
+		var dc := _nodes_of_kind(["trap", "event"])
+		if not dc.is_empty():
+			var pick: int = dc[randi() % dc.size()]
+			(dungeon[pick] as Dictionary)["kind"] = "depths"
+			(dungeon[pick] as Dictionary)["special"] = "depths"
+	if f >= 2 and randf() < 0.6:
+		var lc := _nodes_of_kind(["trap", "event"])
+		if not lc.is_empty():
+			var pick2: int = lc[randi() % lc.size()]
+			(dungeon[pick2] as Dictionary)["kind"] = "labyrinth"
+			(dungeon[pick2] as Dictionary)["special"] = "labyrinth"
+			(dungeon[pick2] as Dictionary)["data"] = {"progress": 0, "solved": false}
+	for i in count:
+		var nd2: Dictionary = dungeon[i]
+		for c in nd2["conns"]:
+			var dest: Dictionary = dungeon[int(c)]
+			var d: String = EXIT_DESCS[randi() % EXIT_DESCS.size()]
+			match String(dest["special"]):
+				"stairs":
+					d = "a stairwell spiraling down into the dark"
+				"depths":
+					d = "a cracked shaft falling away below"
+				"boss":
+					d = "an archway of teeth, humming"
+				"labyrinth":
+					d = "a corridor that will not sit still"
+			(nd2["descs"] as Dictionary)[int(c)] = d
 
-func _next_room() -> void:
-	_refresh_status()
-	if room_queue.is_empty():
-		floor_num += 1
-		if floor_num > 9:
-			_win()
-			return
-		if floor_num - 1 > best_depth:
-			best_depth = floor_num - 1
-			_save_best()
-		var after: Callable = _begin_floor
-		if floor_num == 4:
-			after = func(): _maybe_whisper("hollow_choir", _begin_floor)
-		elif floor_num == 9:
-			after = func(): _maybe_whisper("the_gloam", _begin_floor)
-		_play_cutscene(Content.TIER_CUTSCENES[floor_num], after)
+func _node() -> Dictionary:
+	return dungeon[cur_node]
+
+func _enter_node(id: int) -> void:
+	cur_node = id
+	var nd := _node()
+	if bool(nd["visited"]):
+		_show_exits(true)
 		return
-	var r: Dictionary = room_queue.pop_front()
-	var kind := String(r["kind"])
-	match kind:
+	nd["visited"] = true
+	_run_node()
+
+func _run_node() -> void:
+	_refresh_status()
+	var nd := _node()
+	match String(nd["kind"]):
 		"fight":
-			_start_fight(_pick_monster())
+			var md: Dictionary = nd["data"]
+			_start_fight(_pick_monster() if String(md.get("monster", "")) == "pick" else md)
 		"boss":
 			_start_boss(floor_num / 3 - 1)
 		"keeper":
@@ -410,18 +572,115 @@ func _next_room() -> void:
 			_say(Content.STAIR_TEXT)
 			_pending_choices = []
 			_choice("Descend to floor %d" % (floor_num + 1), "stairs_go")
+			_choice("Step back", "nothing")
+		"depths":
+			_set_art("trap")
+			_say("The floor gives way to a cracked shaft, falling past this floor into deeper dark.\n\nSomething glimmers far below. Or maybe it is just the dark, blinking.")
+			_pending_choices = []
+			_choice("Drop into the dark", "depths_drop")
+			_choice("Step back", "nothing")
+		"labyrinth":
+			_run_labyrinth()
 		_:
+			var r: Dictionary = nd["data"]
 			_set_art(String(r["art"]))
 			_say(String(r["text"]))
 			_pending_choices = []
 			for ch in r["choices"]:
 				var cd: Dictionary = ch
-				# hide unaffordable gamble/offer
 				if String(cd["do"]).begins_with("gamble:") and gold < 15:
 					continue
 				if String(cd["do"]).begins_with("offer:") and gold < 20:
 					continue
 				_choice(String(cd["label"]), String(cd["do"]))
+
+func _show_exits(revisit := false) -> void:
+	mode = "room"
+	_refresh_status()
+	_update_map()
+	var nd := _node()
+	if revisit:
+		_say("Dust and echoes. You have been here.\n\nPassages lead out:")
+	else:
+		_say("Passages lead out:")
+	_pending_choices = []
+	for c in nd["conns"]:
+		_choice(String((nd["descs"] as Dictionary).get(int(c), "a dark passage")), "go:" + str(int(c)))
+
+func _run_labyrinth() -> void:
+	var nd := _node()
+	if bool((nd["data"] as Dictionary).get("solved", false)):
+		_show_exits()
+		return
+	_set_art("corridor")
+	_say("The halls shift when you are not looking. Three doors stand where two were.\n\nOne of them leads onward. The others lead... elsewhere.")
+	_pending_choices = []
+	_choice("The left door", "lab_door:0")
+	_choice("The middle door", "lab_door:1")
+	_choice("The right door", "lab_door:2")
+
+func _descend() -> void:
+	floor_num += 1
+	if floor_num > 9:
+		_win()
+		return
+	if floor_num - 1 > best_depth:
+		best_depth = floor_num - 1
+		_save_best()
+	var after: Callable = _begin_floor
+	if floor_num == 4:
+		after = func(): _maybe_whisper("hollow_choir", _begin_floor)
+	elif floor_num == 9:
+		after = func(): _maybe_whisper("the_gloam", _begin_floor)
+	_play_cutscene(Content.TIER_CUTSCENES[floor_num], after)
+
+func _toggle_map() -> void:
+	if map_panel == null or dungeon.is_empty():
+		return
+	map_panel.visible = not map_panel.visible
+	if map_panel.visible:
+		_update_map()
+
+func _update_map() -> void:
+	if dungeon.is_empty() or map_view == null:
+		return
+	var depth := _bfs_depths()
+	var layers := {}
+	for i in dungeon.size():
+		var d: int = depth[i]
+		if not layers.has(d):
+			layers[d] = []
+		(layers[d] as Array).append(i)
+	var maxd := 0
+	for k in layers.keys():
+		maxd = maxi(maxd, int(k))
+	var pts := []
+	pts.resize(dungeon.size())
+	for d in range(maxd + 1):
+		var arr: Array = layers.get(d, [])
+		for j in arr.size():
+			var x := 55.0 + d * 95.0
+			var y := 300.0 + (j - (arr.size() - 1) / 2.0) * 74.0
+			pts[int(arr[j])] = Vector2(x, y)
+	var links := []
+	var visited := []
+	var special := []
+	var conns := []
+	for i in dungeon.size():
+		var nd: Dictionary = dungeon[i]
+		conns.append((nd["conns"] as Array).duplicate())
+		visited.append(bool(nd["visited"]))
+		special.append(String(nd["special"]))
+		for c in nd["conns"]:
+			if int(c) > i:
+				links.append([i, int(c)])
+	map_view.pts = pts
+	map_view.links = links
+	map_view.conns = conns
+	map_view.visited = visited
+	map_view.special = special
+	map_view.current = cur_node
+	map_view.queue_redraw()
 
 func _visit_keeper() -> void:
 	keeper_met += 1
@@ -440,7 +699,7 @@ func _visit_keeper() -> void:
 		kid = "keeper2"
 	elif floor_num == 8:
 		kid = "keeper3"
-	_play_cutscene([kb], func(): _maybe_whisper(kid, _next_room))
+	_play_cutscene([kb], func(): _maybe_whisper(kid, _show_exits))
 
 func _pick_monster() -> Dictionary:
 	var tier := 0
@@ -466,7 +725,49 @@ func _do(do: String) -> void:
 		"intro_next":
 			_show_intro()
 		"stairs_go":
-			_next_room()
+			_descend()
+		"go":
+			_enter_node(int(parts[1]))
+		"depths_drop":
+			var fall := randi_range(5, 9)
+			hp -= fall
+			if hp <= 0:
+				_die()
+				return
+			_refresh_status()
+			floor_num += 1
+			if floor_num - 1 > best_depth:
+				best_depth = floor_num - 1
+				_save_best()
+			_play_cutscene(
+				[{"art": "trap", "text": "You let go and fall, lantern swinging, past floors you will never see. (-%d HP)" % fall}],
+				func(): _play_cutscene(Content.TIER_CUTSCENES[floor_num], func(): _begin_floor(true))
+			)
+		"lab_door":
+			var nd2 := _node()
+			var data2: Dictionary = nd2["data"]
+			var prog2 := int(data2.get("progress", 0))
+			if randf() < 0.45:
+				data2["progress"] = prog2 + 1
+				if prog2 + 1 >= 2:
+					data2["solved"] = true
+					_set_art("corridor")
+					_say("A door opens onto steady, honest stone. The halls stop shifting.\n\nThe way is clear.")
+				else:
+					_say("This door opens onto another set of doors. Closer, now. The halls are running out of tricks.")
+				_pending_choices = []
+				_choice("Move on", "lab_solved" if bool(data2.get("solved", false)) else "lab_again")
+			elif randf() < 0.7:
+				_after_fight = "lab"
+				_start_fight(_pick_monster())
+			else:
+				_say("A dead end. Somewhere, the halls rearrange themselves. Smug.")
+				_pending_choices = []
+				_choice("Try another door", "lab_again")
+		"lab_again":
+			_run_labyrinth()
+		"lab_solved":
+			_show_exits()
 		"gloam_fight":
 			_start_fight(Content.BOSSES[2], true)
 		"gloam_kneel":
@@ -491,7 +792,11 @@ func _do(do: String) -> void:
 			_pending_choices = []
 			_choice("Continue", "nothing")
 		"nothing":
-			_next_room()
+			if _after_fight == "lab":
+				_after_fight = ""
+				_run_labyrinth()
+			else:
+				_show_exits()
 		"gold":
 			var n := int(parts[1])
 			gold += n
@@ -562,7 +867,7 @@ func _do(do: String) -> void:
 			_pending_choices = []
 			_choice("Continue", "nothing")
 		_:
-			_next_room()
+			_show_exits()
 	_refresh_status()
 
 func _hurt(n: int, msg: String, cont := true) -> void:
@@ -667,12 +972,18 @@ func _win_fight(log: String) -> void:
 	gold += gain
 	_refresh_status()
 	var final := fight_is_boss and floor_num == 9
+	var was_boss := fight_is_boss
 	fight_is_boss = false
 	mode = "room"
 	_set_art("corridor")
 	_say(log + "\n\nThe %s collapses into dust and old coins. (+%d gold)" % [String(enemy["name"]), gain] + (_whisper_tail("bell_keeper") if String(enemy["name"]) == "Bell Ringer" else ""))
 	_pending_choices = []
-	_choice("Continue", "win_go" if final else "nothing")
+	if final:
+		_choice("Continue", "win_go")
+	elif was_boss:
+		_choice("Descend to floor %d" % (floor_num + 1), "stairs_go")
+	else:
+		_choice("Continue", "nothing")
 
 func _die() -> void:
 	if floor_num > best_depth:
