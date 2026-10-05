@@ -37,6 +37,7 @@ var enemy_hp := 0
 var guarding := false
 var combat_turns := 0
 var enemy_stunned := false
+var _armory_return := "room"
 var best_depth := 0
 var keeper_met := 0
 var fight_is_boss := false
@@ -47,7 +48,8 @@ var pondered: Array = []
 var endless := false
 var death_cause := ""
 var keeper_total := 0
-var weapon_tier := 0
+var weapons_owned: Array = ["rusty"]
+var weapon_equipped := "rusty"
 var armor_tier := 0
 var charms_owned: Array = []
 var souls_saved := 0
@@ -274,6 +276,7 @@ func _on_text_tap(event: InputEvent) -> void:
 		_finish_typewriter()
 
 func _set_art(name: String) -> void:
+	art_rect.modulate = Color(1, 1, 1)
 	var path := "res://assets/art/%s.webp" % name
 	if ResourceLoader.exists(path):
 		art_rect.texture = load(path)
@@ -360,7 +363,7 @@ func _on_choice(ch: Dictionary) -> void:
 func _refresh_status() -> void:
 	hp_bar.max_value = max_hp
 	hp_bar.value = hp
-	var wname := String(_gear(Content.WEAPONS, weapon_tier)["name"])
+	var wname := String(_weapon()["name"])
 	var aname := String(_gear(Content.ARMORS, armor_tier)["name"])
 	var cname := _charm_name(_charm())
 	var gearline := "%s · %s" % [wname, aname]
@@ -420,12 +423,33 @@ func _show_codex() -> void:
 	_clear_choices()
 	_pending_choices = []
 	_choice("Back", "title")
-	for w in Content.WHISPERS:
-		var wd: Dictionary = w
-		if String(wd["id"]) in whispers_found:
-			_choice(String(wd["title"]), "codex:" + String(wd["id"]))
-		else:
-			_choice("? ? ?", "codex:locked")
+	_show_choices()
+
+func _show_armory() -> void:
+	mode = "armory"
+	_set_art("treasure")
+	_refresh_status()
+	_say("WEAPON PACK\n\nChoose your steel. (Swap anytime outside battle.)")
+	_pending_choices = []
+	for wid in weapons_owned:
+		var w := {}
+		for cand in Content.WEAPONS:
+			if String((cand as Dictionary)["id"]) == String(wid):
+				w = cand
+				break
+		if w.is_empty():
+			continue
+		var mark := " [wielded]" if String(wid) == weapon_equipped else ""
+		var eff := String((w as Dictionary).get("effect", ""))
+		var eline := ""
+		match eff:
+			"stun": eline = " — may stun"
+			"heal_kill": eline = " — heals on kill"
+			"heavy_crit": eline = " — heavy crits"
+			"first_blood": eline = " — brutal opener"
+			"vow": eline = " — stronger when hurt"
+		_choice("%s (+%d%s)%s" % [String((w as Dictionary)["name"]), int((w as Dictionary)["atk"]), eline, mark], "wield:" + String(wid))
+	_choice("Back", "armory_back")
 	_show_choices()
 
 func _show_whisper_entry(id: String) -> void:
@@ -499,7 +523,8 @@ func _start_run() -> void:
 	endless = false
 	death_cause = ""
 	pondered = []
-	weapon_tier = 0
+	weapons_owned = ["rusty"]
+	weapon_equipped = "rusty"
 	armor_tier = 0
 	charms_owned = []
 	ward_blocked = false
@@ -764,6 +789,8 @@ func _room_choices(nd: Dictionary) -> void:
 			_choice("Ponder a whisper (%d)" % unp, "ponder")
 	if String(nd["kind"]) == "treasure":
 		_choice("Search for arms & armor", "gear_hunt")
+	if weapons_owned.size() > 1:
+		_choice("Change weapon (%d)" % weapons_owned.size(), "armory:room")
 	_show_choices()
 
 func _show_exits(revisit := false) -> void:
@@ -783,6 +810,8 @@ func _show_exits(revisit := false) -> void:
 		if int(c) == prev_node:
 			continue
 		_choice(String((nd["descs"] as Dictionary).get(int(c), "a dark passage")), "go:" + str(int(c)))
+	if weapons_owned.size() > 1:
+		_choice("Change weapon (%d)" % weapons_owned.size(), "armory:exits")
 
 func _run_labyrinth() -> void:
 	var nd := _node()
@@ -1127,6 +1156,20 @@ func _do(do: String) -> void:
 				_show_codex()
 		"codex_back":
 			_show_codex()
+		"armory":
+			if parts.size() > 1:
+				_armory_return = parts[1]
+			_show_armory()
+		"wield":
+			if parts.size() > 1:
+				weapon_equipped = parts[1]
+				_refresh_status()
+			_show_armory()
+		"armory_back":
+			if _armory_return == "exits":
+				_show_exits(false)
+			else:
+				_room_choices(_node())
 		"pack":
 			gold += 14
 			potions += 1
@@ -1227,14 +1270,20 @@ func _hurt(n: int, msg: String, cont := true) -> void:
 func _gear(list: Array, tier: int) -> Dictionary:
 	return list[mini(tier, list.size() - 1)]
 
+func _weapon() -> Dictionary:
+	for w in Content.WEAPONS:
+		if String((w as Dictionary)["id"]) == weapon_equipped:
+			return w
+	return Content.WEAPONS[0]
+
 func _watk() -> int:
-	var base := atk + int(_gear(Content.WEAPONS, weapon_tier)["atk"])
-	if String(_gear(Content.WEAPONS, weapon_tier).get("effect", "")) == "vow" and hp <= max_hp / 2:
+	var base := atk + int(_weapon()["atk"])
+	if String(_weapon().get("effect", "")) == "vow" and hp <= max_hp / 2:
 		base += 5
 	return base
 
 func _weffect() -> String:
-	return String(_gear(Content.WEAPONS, weapon_tier).get("effect", ""))
+	return String(_weapon().get("effect", ""))
 
 func _adef() -> int:
 	return int(_gear(Content.ARMORS, armor_tier)["def"])
@@ -1260,6 +1309,9 @@ func _start_fight(m: Dictionary, is_boss := false) -> void:
 	if _weffect() == "stun" and randf() < 0.25:
 		enemy_stunned = true
 	_set_art(String(m["art"]))
+	if m.has("tint"):
+		var t: Array = m["tint"]
+		art_rect.modulate = Color(float(t[0]), float(t[1]), float(t[2]))
 	_refresh_status()
 	var desc := String(m["desc"])
 	if not is_boss and randf() < 0.4:
@@ -1380,11 +1432,18 @@ func _combat_round(action: String) -> void:
 	_refresh_status()
 	_combat_text(log)
 
+func _next_weapon() -> Dictionary:
+	for w in Content.WEAPONS:
+		var wid := String((w as Dictionary)["id"])
+		if not wid in weapons_owned:
+			return w
+	return {}
+
 func _boss_gear_drop() -> String:
-	if weapon_tier < Content.WEAPONS.size() - 1 and (armor_tier >= Content.ARMORS.size() - 1 or randf() < 0.6):
-		weapon_tier += 1
-		var w: Dictionary = _gear(Content.WEAPONS, weapon_tier)
-		return "\n\nAmong the remains: a %s. You take it. (+%d ATK)" % [String(w["name"]), int(w["atk"])]
+	var nw := _next_weapon()
+	if not nw.is_empty() and (armor_tier >= Content.ARMORS.size() - 1 or randf() < 0.6):
+		weapons_owned.append(String(nw["id"]))
+		return "\n\nAmong the remains: a %s. You stow it in your pack. (+%d ATK — change weapons anytime outside battle)" % [String(nw["name"]), int(nw["atk"])]
 	elif armor_tier < Content.ARMORS.size() - 1:
 		armor_tier += 1
 		var a: Dictionary = _gear(Content.ARMORS, armor_tier)
@@ -1393,10 +1452,10 @@ func _boss_gear_drop() -> String:
 
 func _gear_hunt() -> void:
 	var roll := randf()
-	if roll < 0.45 and weapon_tier < Content.WEAPONS.size() - 1:
-		weapon_tier += 1
-		var w: Dictionary = _gear(Content.WEAPONS, weapon_tier)
-		_say("Behind the rubble: a weapon rack, untouched.\n\nYou take the %s. (+%d ATK)\n\n%s" % [String(w["name"]), int(w["atk"]), String(w["desc"])])
+	var nw := _next_weapon()
+	if roll < 0.45 and not nw.is_empty():
+		weapons_owned.append(String(nw["id"]))
+		_say("Behind the rubble: a weapon rack, untouched.\n\nThe %s. (+%d ATK)\n\n%s\n\nIt joins your pack — wield it whenever you like, outside battle." % [String(nw["name"]), int(nw["atk"]), String(nw["desc"])])
 	elif roll < 0.75 and armor_tier < Content.ARMORS.size() - 1:
 		armor_tier += 1
 		var a: Dictionary = _gear(Content.ARMORS, armor_tier)
