@@ -237,7 +237,7 @@ func _build_ui() -> void:
 	text_label.size = Vector2(680, 268)
 	text_label.add_theme_font_size_override("normal_font_size", 27)
 	text_label.add_theme_color_override("default_color", INK)
-	text_label.scroll_active = false
+	text_label.scroll_active = true
 	text_label.mouse_filter = Control.MOUSE_FILTER_STOP
 	text_label.gui_input.connect(_on_text_tap)
 	add_child(text_label)
@@ -263,6 +263,8 @@ func _mk_label(t: String, size: int, pos: Vector2, minsize: Vector2, col: Color)
 	return l
 
 func _on_text_tap(event: InputEvent) -> void:
+	if _typewriter_done:
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_finish_typewriter()
 	if event is InputEventScreenTouch and event.pressed:
