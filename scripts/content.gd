@@ -252,16 +252,19 @@ const FLOOR_NAMES := ["", "The Throat", "The Gullet", "The Warden's Door", "The 
 # cutscene panels: {"art":..., "text":...}
 const BOSS_CUTSCENES := [
 	[
+		{"art": "boss1_origin", "text": "Before the dark, he was the Warden. For forty years he counted every prisoner, every morning, by name.\n\nWhen the Gloam swallowed the prison, it kept him — because someone has to count.\n\nNow he counts teeth. He has been short for a very, very long time."},
 		{"art": "boss1_approach", "text": "The corridor narrows. The walls here aren't stone — they're teeth, set in humming rows.\n\nAhead, a door grins at you."},
 		{"art": "boss", "text": "The stair ends at a door made of teeth. It opens like a mouth.\n\nThe Warden unfolds from the dark — tall as the room, grinning with a hundred borrowed smiles.\n\n\"ANOTHER ONE,\" it says, with everyone's voice at once. \"COME. BE COUNTED.\""},
 		{"art": "boss", "text": "\"COME. BE COUNTED.\"\n\nThe Warden lunges — teeth first."},
 	],
 	[
+		{"art": "shrine", "text": "She was Sister Anselm. She fasted forty days to purify her soul, and on the fortieth day she died kneeling.\n\nThe Gloam answered her prayer the way it answers everything: literally.\n\nShe will never hunger again. She is hunger now."},
 		{"art": "shrine", "text": "You smell wax and stagnant water.\n\nA drowned chapel opens before you — rows of black candles burning without melting. Something thin hangs above the altar.\n\nIt is breathing."},
 		{"art": "boss", "text": "The chapel below the chapel. Candles that burn black.\n\nThe Saint hangs above the altar, thin as a prayer, eyes like embers.\n\n\"I fasted,\" she whispers, \"so that I would never hunger again. Look how well it worked.\""},
 		{"art": "boss", "text": "\"Look how well it worked.\"\n\nThe Saint opens her eyes. Every candle goes out at once."},
 	],
 	[
+		{"art": "boss3_origin", "text": "Before Vesper, before the chapel, there was the dark under the hill.\n\nThe Ashen War fed it — seven years of dead. Corvin's war. Every delver who never came back fed it.\n\nIt learned faces from the corpses. Now it wears them, trying to remember what it felt like to be held."},
 		{"art": "corridor", "text": "The last corridor. Your lantern light doesn't reach the walls anymore — or there are no walls.\n\nThe dark presses close. Curious.\n\nIt is trying on your shape."},
 		{"art": "boss", "text": "There is no floor nine. There is only the dark, and the dark has a face now.\n\nIt wears the village. It wears the chapel. It is wearing your shape, poorly.\n\n\"STAY,\" it says, in your voice. \"IT'S WARM DOWN HERE.\""},
 		{"art": "boss", "text": "\"IT'S WARM DOWN HERE.\"\n\nThe dark rushes forward — wearing your face."},
