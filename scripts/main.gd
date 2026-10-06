@@ -72,6 +72,9 @@ const EXIT_DESCS := ["a low archway", "a corridor that smells of rot", "a passag
 var art_rect: TextureRect
 var text_label: RichTextLabel
 var choices_vb: VBoxContainer
+var choices_scroll: ScrollContainer
+var scroll_up_btn: Button
+var scroll_down_btn: Button
 var hp_bar: ProgressBar
 var hp_label: Label
 var floor_label: Label
@@ -79,6 +82,8 @@ var gold_label: Label
 var scanlines: ColorRect
 var grain_rect: TextureRect
 var _grain_t := 0.0
+var hit_flash: ColorRect
+var _flash_t := 0.0
 var _typewriter_t := 0.0
 var _typewriter_full := ""
 var _typewriter_done := true
@@ -122,6 +127,12 @@ func _build_ui() -> void:
 	grain_rect.modulate = Color(1, 1, 1, 0.10)
 	grain_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(grain_rect)
+	# red hit flash overlay
+	hit_flash = ColorRect.new()
+	hit_flash.color = Color(0.6, 0.05, 0.05, 0.0)
+	hit_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hit_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(hit_flash)
 	# big title overlay
 	title_label = Label.new()
 	title_label.text = "GLOAM"
@@ -266,15 +277,41 @@ func _build_ui() -> void:
 	text_label.gui_input.connect(_on_text_tap)
 	add_child(text_label)
 	# choices
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(20, 906)
-	scroll.size = Vector2(680, 354)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
+	choices_scroll = ScrollContainer.new()
+	choices_scroll.position = Vector2(20, 906)
+	choices_scroll.size = Vector2(680, 354)
+	choices_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(choices_scroll)
 	choices_vb = VBoxContainer.new()
 	choices_vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	choices_vb.add_theme_constant_override("separation", 12)
-	scroll.add_child(choices_vb)
+	choices_scroll.add_child(choices_vb)
+	# ▲▼ scroll buttons for touch (appear when choices overflow)
+	scroll_up_btn = _mk_scroll_btn("▲", Vector2(648, 862))
+	scroll_up_btn.pressed.connect(func(): choices_scroll.scroll_vertical = maxi(0, choices_scroll.scroll_vertical - 170))
+	scroll_down_btn = _mk_scroll_btn("▼", Vector2(648, 1216))
+	scroll_down_btn.pressed.connect(func(): choices_scroll.scroll_vertical += 170)
+
+func _mk_scroll_btn(t: String, pos: Vector2) -> Button:
+	var b := Button.new()
+	b.text = t
+	b.position = pos
+	b.custom_minimum_size = Vector2(52, 44)
+	b.size = Vector2(52, 44)
+	b.add_theme_font_size_override("font_size", 24)
+	b.add_theme_color_override("font_color", INK)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.12, 0.08, 0.08, 0.95)
+	sb.border_color = Color(0.45, 0.10, 0.10, 0.9)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(8)
+	b.add_theme_stylebox_override("normal", sb)
+	b.add_theme_stylebox_override("hover", sb)
+	b.add_theme_stylebox_override("pressed", sb)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	b.visible = false
+	add_child(b)
+	return b
 
 func _mk_label(t: String, size: int, pos: Vector2, minsize: Vector2, col: Color) -> Label:
 	var l := Label.new()
@@ -323,6 +360,11 @@ func _process(dt: float) -> void:
 		if _grain_t >= 0.12:
 			_grain_t = 0.0
 			grain_rect.position = Vector2(20 + randf_range(-6, 6), 20 + randf_range(-6, 6))
+	# red hit flash fades out
+	if _flash_t > 0.0 and is_instance_valid(hit_flash):
+		_flash_t -= dt
+		var a := clampf(_flash_t / 0.45, 0.0, 1.0) * 0.35
+		hit_flash.color = Color(0.6, 0.05, 0.05, a)
 	if mode == "title" and title_label.visible:
 		title_t += dt
 		var fl := 0.94 + 0.04 * sin(title_t * 6.0) + 0.02 * sin(title_t * 17.3)
@@ -343,6 +385,9 @@ func _clear_choices() -> void:
 	_pending_choices = []
 	for c in choices_vb.get_children():
 		c.queue_free()
+	if is_instance_valid(scroll_up_btn):
+		scroll_up_btn.visible = false
+		scroll_down_btn.visible = false
 
 func _show_choices() -> void:
 	for c in choices_vb.get_children():
@@ -367,6 +412,14 @@ func _show_choices() -> void:
 		var chd: Dictionary = ch
 		b.pressed.connect(func(): _on_choice(chd))
 		choices_vb.add_child(b)
+	# show ▲▼ when choices overflow the visible area
+	await get_tree().process_frame
+	if is_instance_valid(choices_scroll):
+		var overflow := choices_vb.get_minimum_size().y > choices_scroll.size.y + 4.0
+		scroll_up_btn.visible = overflow
+		scroll_down_btn.visible = overflow
+		if not overflow:
+			choices_scroll.scroll_vertical = 0
 
 func _choice(label: String, do: String) -> void:
 	_pending_choices.append({"label": label, "do": do})
@@ -1446,6 +1499,9 @@ func _combat_round(action: String) -> void:
 	log += "%s hits you for %d." % [String(enemy["name"]), edmg]
 	if edmg > 0:
 		_sfx("hurt")
+		_flash_t = 0.45
+		if is_instance_valid(hit_flash):
+			hit_flash.color = Color(0.6, 0.05, 0.05, 0.35)
 		if hp <= max_hp * 0.3 and hp > 0 and randf() < 0.6:
 			log += "\n\"%s\"" % String((Content.CORVIN_LOW as Array)[randi() % Content.CORVIN_LOW.size()])
 		elif randf() < 0.25:

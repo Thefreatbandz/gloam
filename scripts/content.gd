@@ -132,21 +132,21 @@ const BOSSES := [
 const ROOMS := [
 	# --- treasure ---
 	{"art": "treasure", "kind": "treasure",
-		"text": "A chest, banded in iron, half-buried in dust. The lock is already broken — someone left in a hurry. — someone was here before you, and they left in a hurry. Their bootprints lead away from the chest, not toward it. Whatever they found, it wasn't worth staying for.",
+		"text": "A chest, banded in iron, half-buried in dust. The lock is already broken — someone was here before you, and they left in a hurry. Their bootprints lead away from the chest, not toward it. Whatever they found, it wasn't worth staying for.",
 		"sting": "The gold is cold. Everything down here is cold — except the things that are watching.",
 		"choices": [
 			{"label": "Take the gold", "do": "gold:22"},
 			{"label": "Leave it", "do": "nothing"},
 		]},
 	{"art": "corridor", "kind": "treasure",
-		"text": "A dead delver slumps against the wall, pack still on. His lantern went out a long time ago. His coin purse didn't.g time ago. His journal's last page reads: 'Day 9. The whispering knows my name now. Going deeper anyway.' His sword is still sharp. He'd want you to take it.",
+		"text": "A dead delver slumps against the wall, pack still on. His lantern went out a long time ago. His coin purse didn't. His journal's last page reads: 'Day 9. The whispering knows my name now. Going deeper anyway.' His sword is still sharp. He'd want you to take it.",
 		"sting": "You take his purse. You leave his name. The dark keeps the rest.",
 		"choices": [
 			{"label": "Search the pack", "do": "pack"},
 			{"label": "Say a prayer, move on", "do": "heal:4"},
 		]},
 	{"art": "room_armory", "kind": "treasure",
-		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled.ed, as if someone was just using it. But the dust on the floor is undisturbed — no footprints. Whatever maintains this place doesn't walk.",
+		"text": "An armory niche, miraculously untouched. A whetstone sits on the rack, still oiled, as if someone was just using it. But the dust on the floor is undisturbed — no footprints. Whatever maintains this place doesn't walk.",
 		"sting": "The whetstone sings against your blade. Somewhere, something answers.",
 		"choices": [
 			{"label": "Sharpen your blade (+1 ATK)", "do": "atk:1"},
@@ -154,7 +154,7 @@ const ROOMS := [
 		]},
 	# --- traps ---
 	{"art": "trap", "kind": "trap",
-		"text": "The floor clicks under your boot. Ahead, the tiles are wrong — too clean, too even. — too clean, too even, like teeth. Your war instincts count the seams. Pressure plates, probably. Or worse. Step light, knight.",
+		"text": "The floor clicks under your boot. Ahead, the tiles are wrong — too clean, too even, like teeth. Your war instincts count the seams. Pressure plates, probably. Or worse. Step light, knight.",
 		"sting": "You don't look down. Looking down is how it starts.",
 		"choices": [
 			{"label": "Rush across", "do": "dmg:6"},
@@ -169,7 +169,7 @@ const ROOMS := [
 		]},
 	# --- shrine ---
 	{"art": "shrine", "kind": "shrine",
-		"text": "A shrine to something with too many names. The candles are still lit. Someone tends this place.nds them. Down here. In the dark. You leave an offering anyway — a copper coin, a whispered name. Some doors you don't want closed behind you.",
+		"text": "A shrine to something with too many names. The candles are still lit. Someone tends this place. Down here. In the dark. You leave an offering anyway — a copper coin, a whispered name. Some doors you don't want closed behind you.",
 		"sting": "The candles lean toward you as you pass. Hungry, or hopeful. You can't tell.",
 		"choices": [
 			{"label": "Pray (heal 10)", "do": "heal:10"},
@@ -177,7 +177,7 @@ const ROOMS := [
 			{"label": "Leave", "do": "nothing"},
 		]},
 	{"art": "shrine", "kind": "shrine",
-		"text": "A fountain of black water. It doesn't reflect your face — it reflects a face you almost remember. — it reflects a face you almost recognize. Younger. Unscarred. It mouths something at you: 'turn back.' You drink anyway. Knights don't turn back.",
+		"text": "A fountain of black water. It doesn't reflect your face — it reflects a face you almost recognize. Younger. Unscarred. It mouths something at you: 'turn back.' You drink anyway. Knights don't turn back.",
 		"sting": "Your almost-face ripples. It looks happier than you.",
 		"choices": [
 			{"label": "Drink (heal 8)", "do": "heal:8"},
@@ -186,21 +186,21 @@ const ROOMS := [
 		]},
 	# --- events ---
 	{"art": "room_whisper", "kind": "event",
-		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out words.e out the words. Almost. That's the trap — the almost. You pull away before it finishes the sentence. Some things you don't want to understand.",
+		"text": "The walls are whispering. If you press your ear to the stone, you can almost make out the words. Almost. That's the trap — the almost. You pull away before it finishes the sentence. Some things you don't want to understand.",
 		"sting": "The walls know your name now. They practice it when you leave.",
 		"choices": [
 			{"label": "Listen", "do": "whispers"},
 			{"label": "Keep walking", "do": "nothing"},
 		]},
 	{"art": "trap", "kind": "event",
-		"text": "A rusted cage hangs from the ceiling. Inside, a prisoner — alive, somehow. \"Free me,\" he rasps, \"and I'll make it worth your while.\" — alive, somehow. 'Don't,' they croak. 'It's not locked to keep me in.' The cage door swings open at your touch. Empty. It was never about the cage.",
+		"text": "A rusted cage hangs from the ceiling. Inside, a prisoner — alive, somehow. \'Don't,' they croak. 'It's not locked to keep me in.' The cage door swings open at your touch. Empty. It was never about the cage.",
 		"sting": "The cage sways empty behind you. You don't turn around.",
 		"choices": [
 			{"label": "Break the lock", "do": "cage"},
 			{"label": "Leave him", "do": "nothing"},
 		]},
 	{"art": "shrine", "kind": "event",
-		"text": "A tall mirror, filmed with dust. Your reflection is already looking at you before you arrive.e you look at it. It smiles with your mouth. You smash it with your pommel before it can speak. The shards whisper as they fall.",
+		"text": "A tall mirror, filmed with dust. Your reflection is already looking at you before you look at it. It smiles with your mouth. You smash it with your pommel before it can speak. The shards whisper as they fall.",
 		"sting": "Your reflection stays a moment too long after you look away.",
 		"choices": [
 			{"label": "Gaze into it (+2 ATK, -6 HP)", "do": "mirror"},
