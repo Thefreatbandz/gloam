@@ -46,6 +46,9 @@ var whispers_found: Array = []
 var mira_found: Array = []
 var pondered: Array = []
 var endless := false
+var outlast := false  # Learn-mode: OUTLAST mode — endless survival from floor 1, depth is the score. Same engine, meaner scaling, bosses every 3 floors forever.
+var best_outlast := 0  # Learn-mode: deepest Outlast depth. Shown on the title as the number to chase.
+var _save_ok := true  # Learn-mode: flips false if the save backend is blocked (chat-embed sandbox). The run keeps going; only persistence is lost.
 var death_cause := ""
 var keeper_total := 0
 var weapons_owned: Array = ["rusty"]
@@ -448,7 +451,10 @@ func _refresh_status() -> void:
 	if cname != "":
 		gearline += " · %s" % cname
 	hp_label.text = "HP %d/%d   ATK %d   Potions %d\n%s" % [hp, max_hp, _watk(), potions, gearline]
-	if floor_num <= 9:
+	if outlast:
+		# Learn-mode: in Outlast the depth IS the score — always visible, floor 1 on.
+		floor_label.text = "DEPTH %d" % floor_num
+	elif floor_num <= 9:
 		floor_label.text = "FLOOR %d/9 — %s" % [floor_num, Content.FLOOR_NAMES[floor_num]]
 	else:
 		floor_label.text = "DEPTH %d — BELOW ITSELF" % floor_num
@@ -579,11 +585,16 @@ func _show_title() -> void:
 		extra += "\nEndings found: %d/6" % endings_found.size()
 	if keeper_total >= 3:
 		extra += "\nThe Keeper's favor: +1 potion each descent"
+	if best_outlast > 0:
+		extra += "\nOutlast best: depth %d" % best_outlast
 	if souls_saved + souls_doomed > 0:
 		extra += "\nSouls guided: %d · Souls lost: %d" % [souls_saved, souls_doomed]
-	_say("GLOAM\n\nA horror rogue RPG.\n\nNine floors down. One way out." + extra + "\n\nNo sound? Flip your silent switch off — the dark has a voice.")
+	if not _save_ok:
+		extra += "\n\n(This build can't keep saves — best depth lasts this session.)"
+	_say("GLOAM\n\nA horror rogue RPG." + extra + "\n\nNo sound? Flip your silent switch off — the dark has a voice.")
 	_pending_choices = []
-	_choice("DESCEND", "start")
+	_choice("DESCEND — the story. Nine floors down. One way out.", "start_story")
+	_choice("OUTLAST — endless. How deep can you go?", "start_outlast")
 	_choice("CODEX (%d/12)" % whispers_found.size(), "codex")
 
 func _start_run() -> void:
@@ -598,7 +609,6 @@ func _start_run() -> void:
 	fight_is_boss = false
 	guarding = false
 	_after_fight = ""
-	endless = false
 	death_cause = ""
 	pondered = []
 	weapons_owned = ["rusty"]
@@ -606,9 +616,13 @@ func _start_run() -> void:
 	armor_tier = 0
 	charms_owned = []
 	ward_blocked = false
+	endless = outlast  # Learn-mode: outlast never ends — same flag the story sets past floor 9.
 	if sound_on and not amb_player.playing:
 		amb_player.play()
-	_show_intro()
+	if outlast:
+		_show_outlast_intro()
+	else:
+		_show_intro()
 
 func _show_intro() -> void:
 	mode = "intro"
@@ -623,6 +637,17 @@ func _show_intro() -> void:
 	_pending_choices = []
 	_choice("Continue", "intro_next")
 	intro_idx += 1
+
+func _show_outlast_intro() -> void:
+	# Learn-mode: Outlast skips the story prologue — no vow, no rescue.
+	# One splash panel of intent, then straight into floor 1. Depth is the score.
+	mode = "intro"
+	title_label.visible = false
+	art_rect.modulate = Color(1, 1, 1)
+	_play_cutscene(
+		[{"art": "title_hero", "text": "OUTLAST.\n\nNo vow. No rescue. No way out but down.\n\nThe dark doesn't end down here. It just gets hungrier.\n\nHow deep can you go?"}],
+		func(): _play_cutscene(Content.TIER_CUTSCENES[1], _begin_floor)
+	)
 
 func _begin_floor(random_start := false) -> void:
 	mode = "room"
@@ -676,7 +701,7 @@ func _gen_dungeon(f: int) -> void:
 	for i in count:
 		order.append(i)
 	order.sort_custom(func(a, b): return depth[a] > depth[b])
-	var is_boss_floor := f % 3 == 0 and f <= 9
+	var is_boss_floor := f % 3 == 0 and (f <= 9 or outlast)  # Learn-mode: story bosses stop at 9; Outlast bosses never stop.
 	var boss_id := -1
 	var stairs_id := -1
 	if is_boss_floor:
@@ -818,7 +843,10 @@ func _run_node() -> void:
 			var md: Dictionary = nd["data"]
 			_start_fight(_pick_monster() if String(md.get("monster", "")) == "pick" else md)
 		"boss":
-			_start_boss(floor_num / 3 - 1)
+			if outlast:
+				_start_outlast_boss()
+			else:
+				_start_boss(floor_num / 3 - 1)
 		"keeper":
 			_visit_keeper()
 		"stairs":
@@ -922,6 +950,9 @@ func _descend() -> void:
 	floor_num += 1
 	if floor_num - 1 > best_depth:
 		best_depth = floor_num - 1
+		_save_best()
+	if outlast and floor_num > best_outlast:
+		best_outlast = floor_num
 		_save_best()
 	if floor_num > 9:
 		endless = true
@@ -1039,6 +1070,18 @@ func _pick_monster() -> Dictionary:
 		if idx / 3 == tier:
 			cands.append(md)
 	var base: Dictionary = cands[randi() % cands.size()]
+	if outlast:
+		# Learn-mode: Outlast never plateaus — one slope from floor 1, forever.
+		# (Story mode eases off past 9; outlast must not, or the chase dies.)
+		var omult := 1.0 + (floor_num - 1) * 0.16
+		var om: Dictionary = base.duplicate()
+		om["hp"] = int(int(base["hp"]) * omult)
+		om["atk"] = int(int(base["atk"]) * omult)
+		var og: Array = base["gold"]
+		om["gold"] = [int(og[0] * omult), int(og[1] * omult)]
+		if floor_num > 9:
+			om["name"] = "Deep " + String(base["name"]).trim_prefix("The ")
+		return om
 	if floor_num <= 9:
 		# the deeper you go, the meaner it gets
 		var fmult := 1.0 + (floor_num - 1) * 0.12
@@ -1063,6 +1106,12 @@ func _do(do: String) -> void:
 	var cmd := parts[0]
 	match cmd:
 		"start":
+			_start_run()
+		"start_story":
+			outlast = false
+			_start_run()
+		"start_outlast":
+			outlast = true
 			_start_run()
 		"intro_next":
 			_show_intro()
@@ -1413,6 +1462,21 @@ func _start_boss(idx: int) -> void:
 		var wid := "the_warden" if idx == 0 else "starved_saint"
 		_play_cutscene(Content.BOSS_CUTSCENES[idx], func(): _maybe_whisper(wid, func(): _start_fight(b, true)))
 
+func _start_outlast_boss() -> void:
+	# Learn-mode: Outlast cycles the three boss templates forever — each full
+	# cycle meaner than the last. No story cutscenes down here; the fight IS
+	# the story. Straight into combat, gear drop on the win, keep descending.
+	var cycle := int(floor_num / 3) - 1  # floor 3 -> 0, floor 6 -> 1, ...
+	var b: Dictionary = (Content.BOSSES[cycle % 3] as Dictionary).duplicate()
+	var bmult := 1.0 + cycle * 0.22
+	b["hp"] = int(int(b["hp"]) * bmult)
+	b["atk"] = int(int(b["atk"]) * bmult)
+	b["gold"] = int(int(b["gold"]) * bmult)
+	b["desc"] = String(b["text"])  # boss templates carry "text"; fights read "desc"
+	if cycle >= 3:
+		b["name"] = "Deep " + String(b["name"])
+	_start_fight(b, true)
+
 func _gloam_choice() -> void:
 	mode = "room"
 	_set_art("boss")
@@ -1575,7 +1639,7 @@ func _win_fight(log: String) -> void:
 	if _weffect() == "heal_kill":
 		hp = mini(max_hp, hp + 3)
 	_refresh_status()
-	var final := fight_is_boss and floor_num == 9
+	var final := fight_is_boss and floor_num == 9 and not outlast  # Learn-mode: Outlast has no final floor — floor-9 boss is just another milestone.
 	var was_boss := fight_is_boss
 	fight_is_boss = false
 	mode = "room"
@@ -1613,6 +1677,9 @@ func _die() -> void:
 	if floor_num > best_depth:
 		best_depth = floor_num
 		_save_best()
+	if outlast and floor_num > best_outlast:
+		best_outlast = floor_num
+		_save_best()
 	_refresh_status()
 	var panels: Array = []
 	var kline := ""
@@ -1638,7 +1705,10 @@ func _die() -> void:
 		_play_cutscene(panels, _end_choices)
 	else:
 		_unlock_ending("taken")
-		panels.append({"art": "death", "text": Content.END_TAKEN[0]["text"] % floor_num})
+		if outlast:
+			panels.append({"art": "death", "text": "The dark takes you the way it takes everyone — gently, then all at once.\n\nYour lantern gutters out. Somewhere above, a bell rings once, and stops.\n\nOUTLAST — you reached DEPTH %d." % floor_num})
+		else:
+			panels.append({"art": "death", "text": Content.END_TAKEN[0]["text"] % floor_num})
 		panels.append(Content.END_TAKEN[1])
 		_play_cutscene(panels, _end_choices)
 	fight_is_boss = false
@@ -1683,23 +1753,33 @@ func _unlock_ending(id: String) -> void:
 const SAVE_PATH := "user://gloam.save"
 
 func _save_best() -> void:
+	# Learn-mode: the save backend (browser storage) can be blocked in some
+	# sandboxes, e.g. a chat embed. FileAccess.open returns null then instead
+	# of throwing — so this null-check IS our try/catch. The run continues
+	# either way; only persistence is lost, flagged for the title screen.
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f:
-		f.store_var({"best": best_depth, "endings": endings_found, "whispers": whispers_found, "mira": mira_found, "keeper_total": keeper_total, "saved": souls_saved, "doomed": souls_doomed, "sound": sound_on})
-		f.close()
+	if f == null:
+		_save_ok = false
+		return
+	f.store_var({"best": best_depth, "outlast": best_outlast, "endings": endings_found, "whispers": whispers_found, "mira": mira_found, "keeper_total": keeper_total, "saved": souls_saved, "doomed": souls_doomed, "sound": sound_on})
+	f.close()
 
 func _load_best() -> void:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return
 	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if f:
-		var d: Dictionary = f.get_var()
-		best_depth = int(d.get("best", 0))
-		endings_found = d.get("endings", [])
-		whispers_found = d.get("whispers", [])
-		mira_found = d.get("mira", [])
-		keeper_total = int(d.get("keeper_total", 0))
-		souls_saved = int(d.get("saved", 0))
-		souls_doomed = int(d.get("doomed", 0))
-		sound_on = bool(d.get("sound", true))
-		f.close()
+	if f == null:
+		return
+	var d = f.get_var()
+	f.close()
+	if not (d is Dictionary):
+		return  # corrupt save — start fresh rather than crash
+	best_depth = int(d.get("best", 0))
+	best_outlast = int(d.get("outlast", 0))
+	endings_found = d.get("endings", [])
+	whispers_found = d.get("whispers", [])
+	mira_found = d.get("mira", [])
+	keeper_total = int(d.get("keeper_total", 0))
+	souls_saved = int(d.get("saved", 0))
+	souls_doomed = int(d.get("doomed", 0))
+	sound_on = bool(d.get("sound", true))

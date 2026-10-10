@@ -352,3 +352,71 @@ const WHISPERS := [
 	{"id": "the_gloam", "title": "The Gloam",
 		"text": "The Gloam isn't below the world.\n\nThe world is a scab over the Gloam —\n\nand Vesper picked at it until it bled."},
 ]
+
+# ---------------- MIRA'S CAMPAIGN ----------------
+# Learn-mode: Mira runs on the exact same engine — same 9 floors, monsters,
+# bosses, combat loop, whispers. Only the wrapper changes: her prologue,
+# her voice lines, her stat line, her ending. Everything Corvin above is
+# untouched, so his campaign plays exactly as v22.
+
+# Her story happens SIX DAYS before Corvin's: the bells still ring (wrong),
+# Vesper isn't silent yet, and she climbs down alone after Tomas.
+const MIRA_INTRO := [
+	{"art": "homecoming", "text": "Vesper, before the silence.\n\nThe bells still rang — but wrong. At midnight. At hours with no name. Old Marta said the ropes moved on their own, and crossed herself, and would not say more.\n\nYou are Mira. Twelve years old. The blue scarf your mother knit is warm around your neck. The village is afraid, and no one will say of what."},
+	{"art": "mira_room", "text": "Three nights ago, Tomas — the baker's boy, who once split his lunch with you when you were hungry — walked into the chapel at dusk.\n\nHe never walked out.\n\nThe village did nothing. They shuttered their windows and prayed to a god who had stopped answering, and you understood: if anyone was going after him, it would have to be you.\n\nYour bed is unslept. It will stay unslept."},
+	{"art": "mira_room", "text": "You take the blue scarf. You take your little carving knife — the one Corvin made you, the summer before he marched.\n\nYou leave the lamp lit, so the room looks lived-in. Then you climb out the window — the way you've done a hundred times, only never at midnight, and never toward the chapel.\n\nThe bells are ringing. No hand pulls the ropes."},
+	{"art": "intro1", "text": "The chapel door hangs open. Inside: pews overturned, candles guttered, the priest gone — his stole folded neatly on the altar, as if he'd stepped out.\n\nBehind the altar, where the bell-ropes hang, the floor is wrong. The stones are loose. They breathe cold air up at you, tasting of deep water and something sweet underneath.\n\nSomething has been coming up through them. Or calling down."},
+	{"art": "intro2", "text": "You work your little knife under the first stone and pry. It lifts easier than it should — as if the dark below wants to be found.\n\nThe stair goes down beyond your lamplight. You are twelve years old. You have a knife, a scarf, and a lantern.\n\nIt will have to be enough."},
+	{"art": "whisper", "text": "Halfway down, the whispering finds you.\n\n'MIRA.'\n\nIt knows your name. It has been practicing.\n\nYou grip the knife tighter, and keep going down.\n\nFor Tomas. Because someone had to go."},
+]
+
+# Two floors get Mira-voiced variants (her gear and voice differ from the
+# veteran's). Every other floor reuses the shared TIER_CUTSCENES — the
+# dungeon doesn't care who walks it.
+const MIRA_TIER := {
+	1: [
+		{"art": "floor1", "text": "FLOOR ONE — THE THROAT\n\nThe stair lets you out into a tunnel that breathes. In. Out. In. Out.\n\nDon't think about it."},
+		{"art": "floor1", "text": "The walls press close. Your lantern gutters, then burns on — small and defiant. Like you."},
+		{"art": "floor1", "text": "They say the Throat was a mine, once. The miners dug too deep, chasing something that glowed. The company sealed the shafts. The company is gone now. The shafts are not."},
+	],
+	9: [
+		{"art": "floor9", "text": "FLOOR NINE — ITSELF\n\nThere are no more stairs after this. No more doors.\n\nWhatever the Gloam is, it's done hiding. End it."},
+		{"art": "floor9", "text": "No more stairs. No more doors. Just you, your little knife, and ITSELF.\n\nFor Tomas. End it."},
+		{"art": "floor9", "text": "ITSELF has been waiting since before the first bell rang in Vesper. It remembers when your ancestors were fish. It has been patient. It is done being patient."},
+	],
+}
+
+# Her voice in a fight — younger, braver than she feels.
+const MIRA_KILL := [
+	"For Tomas.", "Stay down.", "I'm not afraid of you.",
+	"That's one.", "For Vesper.", "Leave us alone.",
+]
+const MIRA_HURT := [
+	"Ow— no. Not yet.", "Keep going. Keep going.",
+	"It burns— keep going—", "Not crying. Not crying.",
+]
+const MIRA_LOW := [
+	"Not here. Not like this.", "Tomas is still down here.",
+	"One more room. Just one more.", "Corvin would— no. ME. I do this.",
+]
+
+# Her ending. She beats ITSELF — but the dark stirs again, and she knows
+# someone will come looking. So she leaves the traces Corvin finds six
+# days later: the scarf (floor 2), the carving (floor 5), the lantern (floor 8).
+const END_SCARF := [
+	{"art": "boss", "text": "ITSELF collapses into dust and silence.\n\nBut in the corners of the dark, something stirs already. It will reform. It will call again.\n\nAnd you know — the way you know things down here — that someone will come looking for you. Your brother."},
+	{"art": "mira_trace", "text": "So you do the only thing you can.\n\nYou unwind your blue scarf and tie it to a stone where he'll see it. You take out your knife and carve, small and careful, into the wall:\n\n'MIRA WAS HERE. DON'T FOLLOW.'\n\nYou set your lantern on a ledge, still burning — as if you'll be back for it any moment."},
+	{"art": "corridor", "text": "Then you turn away from the stair, and walk deeper — so the dark follows YOU, and not him.\n\nTHE BLUE SCARF — she stayed below, so the dark would stay with her.\n\nSomewhere above, another lantern is lit."},
+]
+
+# If she tries the daylight first: the dark shows her why she can't leave.
+const MIRA_DAYLIGHT_TWIST := "Three steps up, and the dark shows you Vesper — silent, empty, the bells still.\n\nNot yet. But soon. Unless someone stays.\n\nYou turn around."
+
+# Her kneel: same choice Corvin gets at the end, her own words.
+const END_MIRA_STAY := [
+	{"art": "boss", "text": "You kneel.\n\nThe dark rushes forward — not unkindly. It has been so lonely, wearing all those faces."},
+	{"art": "mira_trace", "text": "It keeps what it catches. It catches you gently, the way you'd hold a moth.\n\nSTAY — the dark learns your name, and keeps it."},
+]
+
+# Her death: the "another delver" is Corvin, six days later.
+const MIRA_TAKEN := "The dark takes you the way it takes everyone — gently, then all at once.\n\nYour lantern gutters out. Somewhere above, a bell rings once, and stops.\n\nYou reached floor %d.\n\nSix days from now, your brother will lift the chapel stones. He will find your empty room, and your scarf gone from its hook.\n\nTAKEN — the dark is patient. It can wait for him too."
