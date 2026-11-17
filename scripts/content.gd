@@ -45,6 +45,10 @@ const DEAD_NOTES := [
 	"The Keeper lies. The lantern isn't blue, it's just cold. Cold looks blue down here.",
 	"Mira — if that's really your name, little one — I left you half my bread by the third stair. Run.",
 	"I stopped being hungry on day nine. That's when I got scared.",
+	"The company paid me in silver to seal the ninth shaft. I spent it all on the lock. The lock was cheaper than the truth.",
+	"Day 14. The bells ring when no one pulls them. I have started ringing back. It answers in my voice now.",
+	"Tell the Saint I kept fasting. Tell her it didn't work. Tell her I'm sorry I stopped.",
+	"If you meet the Keeper, ask what the blue flame costs. I paid. I'm still paying.",
 ]
 
 const CARVINGS := [
@@ -54,6 +58,10 @@ const CARVINGS := [
 	"She walks here. The little one with the blue scarf. She hums.",
 	"I was a king's man. Now I'm a wall's man. The wall pays better.",
 	"Don't drink the water that sings. Don't follow the water that doesn't.",
+	"THE COMPANY SEALED THE SHAFT. THE SHAFT DID NOT STAY SEALED.",
+	"SEVEN YEARS OF WAR FED THE DARK. THE DARK IS STILL HUNGRY.",
+	"THE SAINT FASTED SO SHE WOULD NEVER HUNGER. COUNT HER RIBS WHEN YOU SEE HER.",
+	"DON'T LET THE WARDEN COUNT YOU. IF HE FINISHES, YOU STAY.",
 ]
 
 const MIRA_TRACES := {
@@ -96,28 +104,40 @@ const CORVIN_LOW := [
 
 const MONSTERS := [
 	# tier 0 — floors 1-3
-	{"name": "Gutter Wretch", "hp": 19, "atk": 5, "gold": [8, 14], "art": "beast", "tint": [0.65, 0.95, 0.65],
+	{"name": "Gutter Wretch", "tier": 0, "hp": 19, "atk": 5, "gold": [8, 14], "art": "beast", "tint": [0.65, 0.95, 0.65],
 		"desc": "It was a person, once. Now it drags itself along the gutter-stones, begging with a mouth full of black teeth."},
-	{"name": "Pale Crawler", "hp": 16, "atk": 6, "gold": [8, 14], "art": "mon_pale", "tint": [0.75, 0.85, 1.05],
+	{"name": "Pale Crawler", "tier": 0, "hp": 16, "atk": 6, "gold": [8, 14], "art": "mon_pale", "tint": [0.75, 0.85, 1.05],
 		"desc": "It moves wrong — joints bending the other way. It has been waiting in the dark a long, long time."},
-	{"name": "Bell Ringer", "hp": 22, "atk": 4, "gold": [10, 16], "art": "beast", "tint": [1.05, 0.9, 0.65],
+	{"name": "Bell Ringer", "tier": 0, "hp": 22, "atk": 4, "gold": [10, 16], "art": "beast", "tint": [1.05, 0.9, 0.65],
 		"desc": "It carries a cracked chapel bell and rings it as it comes. The sound makes your teeth ache."},
 	# tier 1 — floors 4-6
-	{"name": "Flayed Choir", "hp": 35, "atk": 7, "gold": [15, 24], "art": "beast", "tint": [1.05, 0.65, 0.65],
+	{"name": "Flayed Choir", "tier": 1, "hp": 35, "atk": 7, "gold": [15, 24], "art": "beast", "tint": [1.05, 0.65, 0.65],
 		"desc": "Three voices, one body, no skin. It sings the hymn they sang upstairs, before the silence."},
-	{"name": "Marrow Hound", "hp": 32, "atk": 8, "gold": [15, 24], "art": "mon_marrow", "tint": [0.95, 0.9, 0.7],
+	{"name": "Marrow Hound", "tier": 1, "hp": 32, "atk": 8, "gold": [15, 24], "art": "mon_marrow", "tint": [0.95, 0.9, 0.7],
 		"desc": "It smells the marrow in your bones. It is patient. It does not need to hurry."},
-	{"name": "Weeping Knight", "hp": 40, "atk": 6, "gold": [18, 28], "art": "mon_weeping", "tint": [0.7, 0.8, 0.95],
+	{"name": "Weeping Knight", "tier": 1, "hp": 40, "atk": 6, "gold": [18, 28], "art": "mon_weeping", "tint": [0.7, 0.8, 0.95],
 		"desc": "Armor rusted shut around something that still breathes. It weeps as it raises its sword. It cannot stop."},
 	# tier 2 — floors 7-9
-	{"name": "Gristle Titan", "hp": 54, "atk": 11, "gold": [25, 38], "art": "beast", "tint": [0.9, 0.7, 0.95],
+	{"name": "Gristle Titan", "tier": 2, "hp": 54, "atk": 11, "gold": [25, 38], "art": "beast", "tint": [0.9, 0.7, 0.95],
 		"desc": "The ceiling is too low for it, so it crawls. The stones crack under its knuckles."},
-	{"name": "The Unraveled", "hp": 49, "atk": 12, "gold": [25, 38], "art": "mon_unraveled", "tint": [0.8, 0.78, 0.78],
+	{"name": "The Unraveled", "tier": 2, "hp": 49, "atk": 12, "gold": [25, 38], "art": "mon_unraveled", "tint": [0.8, 0.78, 0.78],
 		"desc": "It is coming apart and it wants you to hold it together. Its hands are so cold."},
-	{"name": "Choir Master", "hp": 59, "atk": 10, "gold": [28, 42], "art": "mon_master", "tint": [0.8, 0.65, 1.05],
+	{"name": "Choir Master", "tier": 2, "hp": 59, "atk": 10, "gold": [28, 42], "art": "mon_master", "tint": [0.8, 0.65, 1.05],
 		"desc": "It conducts with a spine for a baton. The song it is building needs one more voice. Yours."},
-	{"name": "The Unnamed", "hp": 70, "atk": 12, "gold": [32, 48], "art": "mon_unnamed",
+	{"name": "The Unnamed", "tier": 2, "hp": 70, "atk": 12, "gold": [32, 48], "art": "mon_unnamed",
 		"desc": "It has no face because it gave its name away, and something else is wearing it now. It wants yours too."},
+	{"name": "Company Man", "tier": 0, "hp": 18, "atk": 5, "gold": [8, 14], "art": "beast", "tint": [0.8, 0.75, 0.6],
+		"desc": "His company coat is rotted through, but his pick never stops. He digs at the wall. He has been digging for forty years. The wall is winning."},
+	{"name": "Ashen Drummer", "tier": 0, "hp": 20, "atk": 5, "gold": [10, 15], "art": "mon_pale", "tint": [0.9, 0.85, 0.75],
+		"desc": "It beats a drum made of its own skin, keeping time for a march that ended seven years ago. The Ashen War never told it to stop."},
+	{"name": "Drowned Chorister", "tier": 1, "hp": 36, "atk": 7, "gold": [15, 24], "art": "mon_weeping", "tint": [0.65, 0.75, 0.95],
+		"desc": "It sings underwater, though there is no water. The hymn comes out as bubbles and black notes. It remembers every wedding the chapel ever held."},
+	{"name": "Weeping Statue", "tier": 1, "hp": 38, "atk": 8, "gold": [18, 26], "art": "mon_marrow", "tint": [0.85, 0.85, 0.9],
+		"desc": "It only moves when your lantern turns away. You know this because it is closer every time you look back. It is weeping. The statues always weep."},
+	{"name": "The Counted", "tier": 2, "hp": 52, "atk": 11, "gold": [25, 38], "art": "mon_unraveled", "tint": [0.9, 0.8, 0.7],
+		"desc": "The Warden counted it once, and it has been trying to be counted ever since. It wears a hundred teeth, none of them its own."},
+	{"name": "The Bell-Keeper's Hands", "tier": 2, "hp": 56, "atk": 10, "gold": [28, 40], "art": "mon_master", "tint": [0.75, 0.7, 1.0],
+		"desc": "Two hands, no body, ringing a bell that isn't there. The sound makes your teeth ache. They ring for the hours that never come."},
 ]
 
 const BOSSES := [
@@ -244,7 +264,90 @@ const ROOMS := [
 			{"label": "Read the scratches", "do": "carve_read"},
 			{"label": "Move on", "do": "nothing"},
 		]},
+	# --- v23: new rooms ---
+	{"art": "treasure", "kind": "treasure",
+		"text": "A shaft drops straight down, sealed with a plate of iron stamped with the company's mark — a pick crossed with a bell. The plate is newer than the stone around it. The company sealed the ninth shaft and walked away with the silver. The shaft did not stay sealed. Something has been working at the plate from below. The bolts are loose.",
+		"sting": "The company seal is cold. The dark below it is colder.",
+		"choices": [
+			{"label": "Pry the seal loose", "do": "gold:24"},
+			{"label": "Leave the seal", "do": "nothing"},
+		]},
+	{"art": "trap", "kind": "trap",
+		"text": "Bones grow here like brambles — ribs and finger-bones pushing up through the floor, white as mushrooms. They sway when you pass, though there is no wind. The garden is still growing. Something tends it. You step carefully between the stalks.",
+		"sting": "A rib-bone brushes your ankle. It is warm.",
+		"choices": [
+			{"label": "Cut through the bone-brambles", "do": "dmg:5"},
+			{"label": "Pick your way around", "do": "nothing"},
+		]},
+	{"art": "shrine", "kind": "shrine",
+		"text": "A low shrine, and on it a row of black candles burning without melting — the Saint's candles, the ones that never went out in the Drowned Chapel. The flame leans toward you as you kneel. The Saint fasted so she would never hunger again. The candles remember her hunger for her.",
+		"sting": "The black flames lean toward you. Hungry, or hopeful. You can't tell.",
+		"choices": [
+			{"label": "Pray (heal 8)", "do": "heal:8"},
+			{"label": "Take a black candle (+1 potion)", "do": "potion:1"},
+			{"label": "Leave", "do": "nothing"},
+		]},
+	{"art": "room_whisper", "kind": "event",
+		"text": "A loft above the corridor, and in it a cracked chapel bell, hung crooked on its beam. The bell-keeper's rope dangles beside it, swaying though the air is still. He still rings, somewhere. He doesn't know what for. Something glints in the bell's crack — a pouch, hidden where only a ringer would look.",
+		"sting": "The rope sways. No hand pulls it.",
+		"choices": [
+			{"label": "Ring the bell once", "do": "gold:20"},
+			{"label": "Leave it silent", "do": "nothing"},
+		]},
+	{"art": "room_gambler", "kind": "event",
+		"text": "The shade has moved tables. Same gambler's coat, same bone dice — but this table is smaller, and the dice are carved from teeth. \"The other table was for beginners,\" he says. \"This one is for the curious.\" He leans in. \"Ask me anything. The dark tells me things. It charges, of course. It always charges.\"",
+		"sting": "The dice keep rolling after you leave. You can hear them. Don't go back.",
+		"choices": [
+			{"label": "Bet 15 gold", "do": "gamble:15"},
+			{"label": "Ask him what the dark told him", "do": "whispers"},
+			{"label": "Walk away", "do": "nothing"},
+		]},
+	{"art": "shrine", "kind": "event",
+		"text": "A black bowl on a stone plinth, before a statue of the Saint with her hands held out. The bowl is empty, but the stone around it is stained dark — old blood, old gold, old promises. Something in the walls leans closer, listening for what you will give. The dark always takes. Sometimes it gives back.",
+		"sting": "The bowl is empty. The dark is patient.",
+		"choices": [
+			{"label": "Cut your palm, fill the bowl (+2 ATK, -6 HP)", "do": "mirror"},
+			{"label": "Offer 20 gold", "do": "offer:20"},
+			{"label": "Walk on", "do": "nothing"},
+		]},
+	{"art": "corridor", "kind": "event",
+		"text": "A tall mirror stands in the corridor, whole and unfilmed — the first unbroken mirror you have seen down here. Your reflection is already looking at you before you look at it. It is smiling with your mouth. Behind it, in the glass, the corridor goes on forever, and in every length of it, you are standing a little closer.",
+		"sting": "Your reflection stays a moment too long after you look away.",
+		"choices": [
+			{"label": "Gaze into it (+2 ATK, -6 HP)", "do": "mirror"},
+			{"label": "Smash it", "do": "gold:10"},
+			{"label": "Walk away", "do": "nothing"},
+		]},
+	{"art": "lost_soul", "kind": "lost",
+		"text": "A delver pinned under a fallen beam, alive, gritting his teeth against the weight. He sees your sword and laughs — a dry, cracked sound. \"Free me,\" he rasps, \"and I'll give you the charm I found on floor six. Or take my pack and go. The dark doesn't mind either way. It gets paid regardless.\"",
+		"sting": "The beam settles as you decide. It sounds like a sigh.",
+		"choices": [
+			{"label": "Free him", "do": "trap_free"},
+			{"label": "Rob him (30 gold)", "do": "soul_rob"},
+			{"label": "Leave him", "do": "soul_leave"},
+		]},
 ]
+
+# floor-gated rooms (like MIRA_TRACES): appear only on their floor, replacing one event/treasure/trap/shrine node
+const GATED_ROOMS := {
+	5: {"art": "treasure", "kind": "gated",
+		"text": "A cellar under the Drowned Chapel, and the water here is black and still, up to your knees. A strongbox sits on a shelf above the waterline, swollen shut. Below the surface, something pale drifts past your legs — slow as a coffin. The chapel above drowned a long time ago. The cellar is still drowning.",
+		"sting": "The water is black and still. It doesn't reflect your face.",
+		"choices": [
+			{"label": "Wade in for the strongbox", "do": "gold:26"},
+			{"label": "Drink the black water (heal 8)", "do": "heal:8"},
+			{"label": "Climb out", "do": "nothing"},
+		]},
+	7: {"art": "shrine", "kind": "gated",
+		"text": "Statues line the way, all weeping, all facing away. Monks, by their robes — the ones who sealed the Saint in three hundred years ago. They have been apologizing ever since. One statue's face is yours. You don't look twice. Knights learn when not to look. At the feet of the nearest statue, someone has carved one last apology.",
+		"sting": "The statues weep. The stone is wet under your boots.",
+		"choices": [
+			{"label": "Read the last apology", "do": "carve_read"},
+			{"label": "Take the offering at their feet", "do": "gold:18"},
+			{"label": "Kneel and pray (heal 10)", "do": "heal:10"},
+			{"label": "Leave", "do": "nothing"},
+		]},
+}
 
 const STAIR_TEXT := "A stair spirals down into deeper dark. The air gets colder. The whispering gets clearer."
 const FLOOR_NAMES := ["", "The Throat", "The Gullet", "The Warden's Door", "The Hollow Choir", "The Drowned Chapel", "The Saint's Door", "The Marrow Deep", "The Unraveling", "ITSELF"]

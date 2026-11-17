@@ -758,6 +758,14 @@ func _gen_dungeon(f: int) -> void:
 			(dungeon[mpick] as Dictionary)["kind"] = "mira"
 			(dungeon[mpick] as Dictionary)["special"] = ""
 			(dungeon[mpick] as Dictionary)["data"] = {"trace": f}
+	# v23: floor-gated rooms — one node on the gated floor becomes that room
+	if Content.GATED_ROOMS.has(f):
+		var gc := _nodes_of_kind(["event", "treasure", "trap", "shrine"])
+		if not gc.is_empty():
+			var gpick: int = gc[randi() % gc.size()]
+			(dungeon[gpick] as Dictionary)["kind"] = "gated"
+			(dungeon[gpick] as Dictionary)["special"] = ""
+			(dungeon[gpick] as Dictionary)["data"] = Content.GATED_ROOMS[f]
 	if f < 9 and randf() < 0.5:
 		var dc := _nodes_of_kind(["trap", "event"])
 		if not dc.is_empty():
@@ -1067,7 +1075,7 @@ func _pick_monster() -> Dictionary:
 	for m in Content.MONSTERS:
 		var md: Dictionary = m
 		var idx := Content.MONSTERS.find(m)
-		if idx / 3 == tier:
+		if int(md.get("tier", idx / 3)) == tier:
 			cands.append(md)
 	var base: Dictionary = cands[randi() % cands.size()]
 	if outlast:
